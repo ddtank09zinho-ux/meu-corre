@@ -1,0 +1,81 @@
+name: Gerar APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Instalar dependências
+        run: |
+          npm install --no-audit --no-fund
+          pip install pillow
+
+      - name: Montar projeto Android
+        run: |
+          node scripts/copy-web.js
+          npx cap add android
+          python3 scripts/customize-android.py
+          node scripts/copy-web.js
+          npx cap sync android
+
+      - name: Assinatura de teste
+        run: |
+          if [ ! -f keystore/meu-corre-teste.jks.b64 ]; then
+            mkdir -p keystore
+            keytool -genkeypair -keystore /tmp/k.jks -alias meucorre -keyalg RSA -keysize 2048 -validity 10000 -storepass meucorre-teste -keypass meucorre-teste -dname "CN=Meu Corre Beta, O=Meu Corre, C=BR"
+            base64 -w 76 /tmp/k.jks > keystore/meu-corre-teste.jks.b64
+            git config user.name "github-actions"
+            git config user.email "github-actions@users.noreply.github.com"
+            git add keystore/meu-corre-teste.jks.b64
+            git commit -m "Assinatura de teste do beta [skip ci]"
+            git push
+          fi
+
+      - name: Compilar APK
+        working-directory: android
+        env:
+          KEYSTORE_PASSWORD: meucorre-teste
+        run: |
+          base64 -d ../keystore/meu-corre-teste.jks.b64 > app/release.jks
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Nomear APK
+        run: |
+          echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
+          cp android/app/build/outputs/apk/release/app-release.apk meu-corre.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: meu-corre-apk
+          path: meu-corre.apk
+
+      - name: Publicar versão para download
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}-${{ github.run_number }}
+          name: Meu Corre ${{ env.VERSION }} (build ${{ github.run_number }})
+          body: |
+            Baixe o arquivo **meu-corre.apk** abaixo no celular Android e instale.
+          files: meu-corre.apk
+          make_latest: true

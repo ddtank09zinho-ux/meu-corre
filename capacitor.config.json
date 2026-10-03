@@ -1,0 +1,9 @@
+{
+  "appId": "br.app.meucorre",
+  "appName": "Meu Corre",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#111418",
+    "useLegacyBridge": true
+  }
+}

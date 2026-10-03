@@ -1,0 +1,743 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Meu Corre</title>
+<meta name="description" content="Lucro real de quem trabalha com aplicativo: moto, carro ou bicicleta. Ganhos, custos do veículo, meta do dia e MEI.">
+<meta name="theme-color" content="#111418">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Meu Corre">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: app de celular com uma coluna, cabeçalho fixo e barra de abas inferior; sinalização viária como linguagem visual */
+:root{
+  --bg:#EEF0F2; --surface:#FFFFFF; --surface-2:#E3E6EA; --fg:#16191D; --muted:#5B636D; --line:#D3D8DE;
+  --accent:#E8A600; --accent-ink:#1A1400; --accent-text:#8A6200;
+  --good:#1E7F4F; --warn:#B45309; --bad:#B42318;
+  --bar-ghost:#C9CFD6;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111418; --surface:#1A1E23; --surface-2:#242A31; --fg:#EDEFF2; --muted:#9AA3AE; --line:#2E353D;
+  --accent:#F5B800; --accent-ink:#1A1400; --accent-text:#F5C42E;
+  --good:#3CC486; --warn:#F0A04B; --bad:#F27365; --bar-ghost:#3A424C; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111418; --surface:#1A1E23; --surface-2:#242A31; --fg:#EDEFF2; --muted:#9AA3AE; --line:#2E353D;
+  --accent:#F5B800; --accent-ink:#1A1400; --accent-text:#F5C42E;
+  --good:#3CC486; --warn:#F0A04B; --bad:#F27365; --bar-ghost:#3A424C; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45;font-variant-numeric:tabular-nums}
+.wrap{max-width:560px;margin:0 auto;padding-inline:16px;padding-block:0 96px}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:12px 10px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:34px;height:34px;border-radius:7px;background:var(--accent);display:grid;place-items:center;transform:rotate(45deg)}
+.logo span{transform:rotate(-45deg);font-family:var(--display);font-weight:700;color:var(--accent-ink);font-size:15px;letter-spacing:.02em}
+.brand h1{font-family:var(--display);font-weight:700;font-size:24px;margin:0;letter-spacing:.01em;text-transform:uppercase}
+.brand small{display:block;color:var(--muted);font-size:12px;margin-top:-3px}
+.chip{font-size:11px;text-transform:uppercase;letter-spacing:.08em;padding:3px 8px;border-radius:99px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+section.tab{display:flex;flex-direction:column;gap:14px;padding-top:16px}
+h2{font-family:var(--display);font-weight:600;font-size:20px;text-transform:uppercase;letter-spacing:.03em;margin:0;text-wrap:balance}
+h3{font-family:var(--display);font-weight:600;font-size:17px;text-transform:uppercase;letter-spacing:.04em;margin:0;color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.hero{background:var(--fg);color:var(--bg);border:none;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-30px;top:0;bottom:0;width:90px;background:repeating-linear-gradient(135deg,var(--accent) 0 14px,transparent 14px 28px);opacity:.9}
+.hero > *{position:relative;z-index:1;max-width:calc(100% - 60px)}
+.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.1em;opacity:.75}
+.big{font-family:var(--display);font-weight:700;font-size:56px;line-height:1;letter-spacing:-.01em}
+.big.neg{color:var(--bad)}
+.hero p{margin:0;font-size:14px;opacity:.85}
+.pills{display:flex;flex-wrap:wrap;gap:8px}
+.pill{background:var(--surface-2);color:var(--fg);border-radius:6px;padding:6px 10px;font-size:13px}
+.pill b{font-family:var(--display);font-size:17px;font-weight:600;margin-right:3px}
+.hero .pill{background:rgba(127,127,127,.22);color:var(--bg)}
+.progress{height:12px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.progress > i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .3s}
+.progress.over > i{background:var(--bad)}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.row .lbl{color:var(--muted)}
+.row .val{font-weight:600;white-space:nowrap}
+.ledger{display:flex;flex-direction:column}
+.ledger .row{padding-block:8px;border-bottom:1px dashed var(--line)}
+.ledger .row:last-child{border-bottom:none}
+.ledger .total{border-top:2px solid var(--fg);border-bottom:none;padding-top:10px;margin-top:2px}
+.ledger .total .lbl{color:var(--fg);font-weight:600}
+.ledger .total .val{font-family:var(--display);font-size:22px}
+.minus{color:var(--bad)}
+.tag{font-size:11px;padding:2px 6px;border-radius:4px;background:var(--surface-2);color:var(--muted);margin-left:6px;white-space:nowrap}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media (max-width:380px){.grid3{grid-template-columns:1fr 1fr}}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);min-width:0}
+input,select{font:inherit;font-size:16px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:9px 10px;width:100%;min-width:0}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.prefix{position:relative}
+.prefix input{padding-left:32px}
+.prefix::before{content:"R$";position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--muted);pointer-events:none}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:10px 14px}
+.btn-main{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-family:var(--display);font-weight:700;font-size:18px;text-transform:uppercase;letter-spacing:.05em;padding:12px}
+.btn-link{border:none;background:none;color:var(--accent-text);padding:4px 0;font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.btn-sm{padding:5px 10px;font-size:13px}
+.danger{color:var(--bad);border-color:var(--bad)}
+.note{font-size:13px;color:var(--muted);margin:0}
+.sample{background:var(--surface-2);border-radius:8px;padding:10px 12px;font-size:13px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font-size:11px;font-family:var(--body)}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.stat{display:flex;flex-direction:column;gap:2px;background:var(--surface-2);border-radius:8px;padding:10px}
+.stat span{font-size:12px;color:var(--muted)}
+.stat b{font-family:var(--display);font-size:22px;font-weight:600}
+.daylist .row{padding-block:10px;border-bottom:1px solid var(--line);align-items:center;flex-wrap:wrap}
+.daylist .d{flex:1 1 200px}
+.daylist .d b{white-space:nowrap}
+.daylist .row:last-child{border-bottom:none}
+.daylist .d{display:flex;flex-direction:column;min-width:0}
+.daylist .d small{color:var(--muted);font-size:12px}
+.maint{display:flex;flex-direction:column;gap:12px}
+.mitem{display:flex;flex-direction:column;gap:6px}
+.status{font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.s-ok{color:var(--good);background:color-mix(in srgb,var(--good) 14%,transparent)}
+.s-warn{color:var(--warn);background:color-mix(in srgb,var(--warn) 16%,transparent)}
+.s-bad{color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,transparent)}
+.toggle{display:flex;background:var(--surface-2);border-radius:9px;padding:4px;gap:4px}
+.toggle button{flex:1;border:none;background:none;padding:9px;font-weight:600;color:var(--muted)}
+.toggle button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+ul.benef{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+ul.benef b{font-weight:600}
+.callout{border-left:4px solid var(--accent);padding:10px 12px;background:var(--surface-2);border-radius:0 8px 8px 0;font-size:14px}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav.tabs .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+nav.tabs button{border:none;border-radius:0;background:none;padding:9px 4px 10px;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);font-size:12px;font-weight:600;border-top:3px solid transparent}
+nav.tabs button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8}
+nav.tabs button[aria-selected="true"]{color:var(--fg);border-top-color:var(--accent)}
+.toast{position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;z-index:9;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+details summary{cursor:pointer;font-weight:600;list-style:none}
+details summary::after{content:" ▾";color:var(--muted)}
+details[open] summary::after{content:" ▴"}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;padding-top:env(safe-area-inset-top,0px)}
+img{max-width:100%}
+.sheet-bg{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);width:100%;max-width:560px;max-height:92%;overflow:auto;border-radius:16px 16px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+.sheet h2{font-size:26px}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px}
+.check input{width:20px;height:20px;flex:none;margin-top:1px}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap}
+.btnrow button{flex:1 1 140px}
+.corre.on{border:2px solid var(--accent)}
+.live{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--good);margin-right:6px;animation:pulse 1.4s infinite}
+@keyframes pulse{50%{opacity:.25}}
+.btn-stop{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.install{display:flex;align-items:center;gap:12px;justify-content:space-between;background:var(--accent);color:var(--accent-ink);border-radius:10px;padding:12px 14px;font-weight:600}
+.install button{background:var(--accent-ink);color:var(--accent);border:none;font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"><span>MC</span></div>
+      <div><h1>Meu Corre</h1><small id="hoje-str"></small></div>
+    </div>
+    <span class="chip">Beta 0.3</span>
+  </header>
+
+  <!-- HOJE -->
+  <section class="tab" id="tab-hoje">
+    <div class="install" id="b-install" hidden><span id="install-txt">Instale o Meu Corre no seu celular</span><button type="button" id="install-btn">Instalar</button></div>
+    <div class="card corre" id="corre-card">
+      <div class="row"><h2>Corre de hoje</h2><span class="status s-ok" id="co-status" hidden><span class="live"></span>Contando</span></div>
+      <div id="co-off" style="display:flex;flex-direction:column;gap:10px">
+        <p class="note" id="co-desc"></p>
+        <label class="f" id="co-odo-ini-l">Km no painel agora (hodômetro)<input id="co-odo-ini" inputmode="numeric" placeholder="Ex.: 23450"></label>
+        <button type="button" class="btn-main" id="co-start">Iniciar corre</button>
+      </div>
+      <div id="co-on" hidden style="display:flex;flex-direction:column;gap:10px">
+        <div class="grid2">
+          <div class="stat"><span>Tempo rodando</span><b id="co-tempo">0h00</b></div>
+          <div class="stat"><span id="co-km-l">Km pelo GPS</span><b id="co-km">0,0 km</b></div>
+        </div>
+        <label class="f" id="co-odo-fim-l">Km no painel agora (hodômetro)<input id="co-odo-fim" inputmode="numeric" placeholder="Ex.: 23590"></label>
+        <button type="button" class="btn-main btn-stop" id="co-stop">Encerrar corre</button>
+        <p class="note" id="co-hint"></p>
+      </div>
+    </div>
+
+    <div class="card hero">
+      <div class="eyebrow">No seu bolso hoje</div>
+      <div class="big" id="h-lucro">R$ 0</div>
+      <p id="h-sub"></p>
+      <div class="pills" id="h-pills"></div>
+    </div>
+
+    <div class="card">
+      <div class="row"><h3>Meta do dia</h3><span class="val" id="m-meta"></span></div>
+      <div class="progress"><i id="m-bar" style="width:0%"></i></div>
+      <p class="note" id="m-txt"></p>
+    </div>
+
+    <div class="card">
+      <h3>Para onde foi o dinheiro</h3>
+      <div class="ledger" id="h-ledger"></div>
+    </div>
+
+    <form class="card" id="f-dia" autocomplete="off">
+      <div class="row"><h2>Registrar o dia</h2><input type="date" id="d-data" style="width:auto"></div>
+      <h3>Ganhos por plataforma</h3>
+      <div class="grid2" id="d-plats"></div>
+      <h3>Como foi o dia</h3>
+      <div class="grid3">
+        <label class="f">Km rodados<input id="d-km" inputmode="decimal" placeholder="0"></label>
+        <label class="f">Horas online<input id="d-horas" inputmode="decimal" placeholder="0"></label>
+        <label class="f"><span class="lbl-un">Entregas</span><input id="d-entregas" inputmode="numeric" placeholder="0"></label>
+      </div>
+      <label class="f">Alimentação e outros gastos do dia<div class="prefix"><input id="d-extra" inputmode="decimal" placeholder="0,00"></div></label>
+      <button type="submit" class="btn-main">Salvar dia</button>
+      <p class="note" id="d-nota"></p>
+    </form>
+  </section>
+
+  <!-- SEMANA -->
+  <section class="tab" id="tab-semana" hidden>
+    <div class="sample" id="s-sample" hidden><span>Você está vendo dias de exemplo.</span><button class="btn-sm" id="b-limpar">Apagar exemplos</button></div>
+    <div class="card">
+      <div class="row"><h2>Últimos 7 dias</h2><span class="note" id="s-periodo"></span></div>
+      <div class="grid2">
+        <div class="stat"><span>Lucro real</span><b id="s-lucro">–</b></div>
+        <div class="stat"><span>O app mostrou</span><b id="s-bruto">–</b></div>
+        <div class="stat"><span>Lucro por hora</span><b id="s-hora">–</b></div>
+        <div class="stat"><span>Km rodados</span><b id="s-km">–</b></div>
+      </div>
+      <svg class="chart" id="s-chart" viewBox="0 0 340 180" role="img" aria-label="Gráfico de ganhos por dia"></svg>
+      <div class="legend"><span><i style="background:var(--bar-ghost)"></i>O app mostrou</span><span><i style="background:var(--accent)"></i>Lucro real</span></div>
+    </div>
+    <div class="card">
+      <h3>Dias registrados</h3>
+      <div class="daylist" id="s-lista"></div>
+    </div>
+  </section>
+
+  <!-- VEÍCULO -->
+  <section class="tab" id="tab-moto" hidden>
+    <div class="card hero">
+      <div class="eyebrow">Cada km rodado custa</div>
+      <div class="big" id="mo-km">R$ 0</div>
+      <p id="mo-sub"></p>
+    </div>
+
+    <div class="card">
+      <div class="row"><h2 id="mo-caixa-t">Caixinha da moto</h2><b id="mo-caixa" style="font-family:var(--display);font-size:22px"></b></div>
+      <p class="note">Dinheiro que o desgaste já consumiu e que você deveria ter guardado para as próximas manutenções.</p>
+      <div class="maint" id="mo-itens"></div>
+    </div>
+
+    <form class="card" id="f-manut">
+      <h3>Fiz uma manutenção</h3>
+      <div class="grid2">
+        <label class="f">Serviço<select id="mn-item"></select></label>
+        <label class="f">Valor pago<div class="prefix"><input id="mn-valor" inputmode="decimal" placeholder="0,00"></div></label>
+      </div>
+      <label class="f">Data<input type="date" id="mn-data"></label>
+      <button type="submit">Registrar manutenção</button>
+    </form>
+
+    <form class="card" id="f-cfg">
+      <h2>Meu veículo</h2>
+      <label class="f">Com o que você trabalha<select id="c-vei"><option value="moto">Moto</option><option value="carro">Carro</option><option value="bike">Bicicleta</option></select></label>
+      <p class="note" id="c-vei-nota" hidden>Ao salvar, os custos e as peças voltam aos valores padrão do novo veículo. Seus dias registrados continuam.</p>
+      <div class="grid2">
+        <label class="f fuel">Consumo (km/l)<input id="c-consumo" inputmode="decimal"></label>
+        <label class="f fuel">Combustível (R$/litro)<input id="c-gas" inputmode="decimal"></label>
+        <label class="f">Meta de lucro por dia<div class="prefix"><input id="c-meta" inputmode="decimal"></div></label>
+        <label class="f">Dias trabalhados por mês<input id="c-dias" inputmode="numeric"></label>
+      </div>
+      <details>
+        <summary>Custos mensais fixos</summary>
+        <div class="grid2" style="margin-top:10px">
+          <label class="f">Parcela do veículo<div class="prefix"><input id="c-parcela" inputmode="decimal"></div></label>
+          <label class="f" id="c-docs-l"><span>IPVA, licenciamento e seguro (média/mês)</span><div class="prefix"><input id="c-docs" inputmode="decimal"></div></label>
+          <label class="f">Plano de celular<div class="prefix"><input id="c-cel" inputmode="decimal"></div></label>
+          <label class="f">Desvalorização (R$ por km)<input id="c-deprec" inputmode="decimal"></label>
+        </div>
+      </details>
+      <details>
+        <summary>Peças e intervalos de troca</summary>
+        <div id="c-itens" style="display:flex;flex-direction:column;gap:10px;margin-top:10px"></div>
+      </details>
+      <button type="submit" class="btn-main">Salvar configurações</button>
+    </form>
+
+    <div class="card">
+      <h2>Seus dados</h2>
+      <p class="note">Tudo fica guardado só neste celular. Faça um backup de vez em quando e guarde o arquivo no Google Drive ou no WhatsApp.</p>
+      <div class="btnrow">
+        <button type="button" id="b-export">Baixar backup</button>
+        <button type="button" id="b-import">Restaurar backup</button>
+      </div>
+      <input type="file" id="f-import" accept=".json,application/json" hidden>
+      <button type="button" class="danger" id="b-reset">Apagar todos os dados</button>
+      <p class="note">Meu Corre · versão beta 0.3</p>
+    </div>
+  </section>
+
+  <!-- MEI -->
+  <section class="tab" id="tab-mei" hidden>
+    <div class="toggle" role="group" aria-label="Situação do MEI">
+      <button type="button" id="t-sem" aria-pressed="true">Ainda não tenho MEI</button>
+      <button type="button" id="t-com" aria-pressed="false">Já sou MEI</button>
+    </div>
+
+    <div id="mei-sem" style="display:flex;flex-direction:column;gap:14px">
+      <div class="card hero">
+        <div class="eyebrow">Proteção do MEI por mês</div>
+        <div class="big">R$ 86,05</div>
+        <p>DAS do MEI de serviços em 2026: R$ 81,05 de INSS + R$ 5,00 de ISS.</p>
+      </div>
+      <div class="card">
+        <h2>O que você ganha pagando o DAS</h2>
+        <ul class="benef">
+          <li><b>Auxílio por incapacidade</b> se ficar sem poder trabalhar. <b>Em caso de acidente, não precisa cumprir carência.</b></li>
+          <li><b>Aposentadoria por idade</b>, contando o tempo de contribuição.</li>
+          <li><b>Salário-maternidade</b>, após 10 contribuições.</li>
+          <li><b>Pensão por morte e auxílio-reclusão</b> para a família.</li>
+          <li><b>CNPJ</b> para emitir nota, abrir conta PJ e conseguir crédito mais barato.</li>
+        </ul>
+        <div class="callout" id="mei-conta"></div>
+      </div>
+      <div class="card">
+        <h3>Como abrir (grátis)</h3>
+        <ol class="benef" style="padding-left:20px">
+          <li>Entre no Portal do Empreendedor com a sua conta gov.br (nível prata ou ouro).</li>
+          <li id="mei-ocup">Escolha a ocupação do seu trabalho.</li>
+          <li>Pronto: o CNPJ sai na hora. Não pague sites que cobram para abrir o MEI.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div id="mei-com" hidden style="display:flex;flex-direction:column;gap:14px">
+      <div class="card hero">
+        <div class="eyebrow">Próximo DAS vence em</div>
+        <div class="big" id="das-dias">–</div>
+        <p id="das-data"></p>
+      </div>
+      <div class="card">
+        <div class="row"><h2>Limite do MEI</h2><span class="val" id="lim-pct"></span></div>
+        <div class="progress" id="lim-wrap"><i id="lim-bar"></i></div>
+        <div class="ledger">
+          <div class="row"><span class="lbl">Faturado em <span id="lim-ano"></span></span><span class="val" id="lim-fat"></span></div>
+          <div class="row"><span class="lbl">Projeção até dezembro</span><span class="val" id="lim-proj"></span></div>
+          <div class="row"><span class="lbl">Limite anual</span><span class="val">R$ 81.000,00</span></div>
+        </div>
+        <p class="note" id="lim-msg"></p>
+        <label class="f">Faturamento do ano antes de usar o app<div class="prefix"><input id="c-fatant" inputmode="decimal" placeholder="0,00"></div></label>
+      </div>
+      <div class="card">
+        <h3>Vem aí em 2027</h3>
+        <p class="note" style="color:var(--fg)">A reforma tributária passa a exigir que o MEI emita nota fiscal em todas as vendas, inclusive para pessoa física, com os novos campos de IBS e CBS. O valor fixo do DAS continua.</p>
+        <span class="tag" style="align-self:flex-start;margin:0">Emissão de nota: próxima versão</span>
+      </div>
+    </div>
+  </section>
+</div>
+
+<nav class="tabs" aria-label="Seções">
+  <div class="in" role="tablist">
+    <button role="tab" data-tab="hoje" aria-selected="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg>Hoje</button>
+    <button role="tab" data-tab="semana" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M5 20V11M12 20V5M19 20v-6"/></svg>Semana</button>
+    <button role="tab" data-tab="moto" aria-selected="false" id="tab-vei"></button>
+    <button role="tab" data-tab="mei" aria-selected="false"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>MEI</button>
+  </div>
+</nav>
+<div class="toast" id="toast" role="status"></div>
+
+<div class="sheet-bg" id="setup" hidden>
+  <form class="sheet" id="f-setup" autocomplete="off">
+    <div class="brand"><div class="logo" aria-hidden="true"><span>MC</span></div><h1>Meu Corre</h1></div>
+    <h2>Quanto sobra de verdade no seu corre?</h2>
+    <p class="note" style="color:var(--fg)">Conte como você trabalha e o app faz as contas: combustível, desgaste, manutenção e MEI.</p>
+    <div class="toggle" role="group" aria-label="Com o que você trabalha" id="su-vei">
+      <button type="button" data-v="moto" aria-pressed="true">Moto</button>
+      <button type="button" data-v="carro" aria-pressed="false">Carro</button>
+      <button type="button" data-v="bike" aria-pressed="false">Bicicleta</button>
+    </div>
+    <div class="grid2" id="su-fuel">
+      <label class="f">Quantos km faz por litro?<input id="su-consumo" inputmode="decimal" value="35"></label>
+      <label class="f">Preço do combustível no seu posto<div class="prefix"><input id="su-gas" inputmode="decimal" value="6,19"></div></label>
+    </div>
+    <label class="f">Quanto você quer lucrar por dia (limpo)?<div class="prefix"><input id="su-meta" inputmode="decimal" value="180"></div></label>
+    <label class="check"><input type="checkbox" id="su-mei">Já tenho MEI</label>
+    <label class="check"><input type="checkbox" id="su-exemplo">Mostrar alguns dias de exemplo para conhecer o app</label>
+    <button type="submit" class="btn-main">Começar</button>
+    <p class="note">Você pode mudar tudo isso depois na aba do seu veículo.</p>
+  </form>
+</div>
+
+<script>
+(function(){
+const KEY='meucorre.v1';
+const DAS_2026=86.05, LIMITE_MEI=81000;
+const PLATS={ifood:'iFood','99food':'99Food',rappi:'Rappi',lala:'Lalamove',uber:'Uber',n99:'99',indrive:'inDrive',outros:'Outros / particular',gorjeta:'Gorjetas'};
+const PLAT=Object.keys(PLATS);
+const ICON={
+  moto:'<circle cx="6" cy="16" r="3.2"/><circle cx="18" cy="16" r="3.2"/><path d="M6 16l4-6h5l3 6M13 10l-1-3h-2"/>',
+  carro:'<path d="M3.5 16.5v-3.5l2.2-5.5h12.6l2.2 5.5v3.5z"/><path d="M3.5 13h17"/><circle cx="7.5" cy="16.5" r="1.8"/><circle cx="16.5" cy="16.5" r="1.8"/>',
+  bike:'<circle cx="6" cy="16" r="3.5"/><circle cx="18" cy="16" r="3.5"/><path d="M6 16l4-7h5l3 7M10 9l2 7M14 6h2.5"/>'};
+const VEI={
+  moto:{rot:'Moto',de:'da moto',fuel:true,consumo:35,deprec:0.08,docs:90,meta:180,un:'entregas',Un:'Entregas',
+    docsLbl:'IPVA, licenciamento e seguro (média/mês)',ocup:'Escolha a ocupação <b>Motoboy</b> ou <b>Entregador</b>.',
+    plats:['ifood','99food','rappi','lala','outros','gorjeta'],
+    itens:[{id:'oleo',nome:'Troca de óleo',km:1500,valor:55},{id:'pneu',nome:'Pneus (par)',km:12000,valor:380},
+      {id:'relacao',nome:'Kit relação',km:15000,valor:230},{id:'freio',nome:'Freios',km:6000,valor:90},
+      {id:'revisao',nome:'Revisão geral',km:6000,valor:150}]},
+  carro:{rot:'Carro',de:'do carro',fuel:true,consumo:11,deprec:0.12,docs:400,meta:200,un:'corridas',Un:'Corridas',
+    docsLbl:'IPVA, licenciamento e seguro (média/mês)',ocup:'Escolha a ocupação <b>Motorista de aplicativo independente</b>.',
+    plats:['uber','n99','indrive','ifood','outros','gorjeta'],
+    itens:[{id:'c-oleo',nome:'Óleo e filtros',km:10000,valor:250},{id:'c-pneu',nome:'Pneus (jogo de 4)',km:40000,valor:1600},
+      {id:'c-freio',nome:'Freios',km:20000,valor:350},{id:'c-alin',nome:'Alinhamento e balanceamento',km:10000,valor:150},
+      {id:'c-revisao',nome:'Revisão geral',km:10000,valor:500}]},
+  bike:{rot:'Bike',de:'da bike',fuel:false,consumo:0,deprec:0.02,docs:0,meta:100,un:'entregas',Un:'Entregas',
+    docsLbl:'Seguro e outros custos (média/mês)',ocup:'Escolha a ocupação de <b>entregador</b> que descreve o seu trabalho.',
+    plats:['ifood','99food','rappi','outros','gorjeta'],
+    itens:[{id:'b-trans',nome:'Corrente, coroa e catraca',km:3000,valor:120},{id:'b-pneu',nome:'Pneus e câmaras',km:3000,valor:110},
+      {id:'b-freio',nome:'Freios',km:2000,valor:50},{id:'b-revisao',nome:'Revisão geral',km:3000,valor:80}]}};
+const DEF={veiculo:'moto',consumo:35,gas:6.19,meta:180,dias:24,parcela:0,docs:90,cel:60,deprec:0.08,mei:false,fatAnt:0,
+  itens:JSON.parse(JSON.stringify(VEI.moto.itens))};
+const V=()=>VEI[S.cfg.veiculo]||VEI.moto;
+function applyVehicle(v){const c=S.cfg,x=VEI[v];c.veiculo=v;c.consumo=x.consumo||c.consumo;c.deprec=x.deprec;c.docs=x.docs;c.meta=x.meta;c.itens=JSON.parse(JSON.stringify(x.itens))}
+
+const iso=d=>{const z=new Date(d.getTime()-d.getTimezoneOffset()*60000);return z.toISOString().slice(0,10)};
+const today=iso(new Date());
+function addDays(s,n){const d=new Date(s+'T12:00:00');d.setDate(d.getDate()+n);return iso(d)}
+
+function sampleDays(v){
+  const SAMPLE={
+    moto:{k:['ifood','99food','rappi','lala','outros','gorjeta'],d:[[168,42,0,0,18,6,128,9,17,22],[196,0,31,0,0,4,141,9.5,19,20],null,[214,55,0,38,0,9,172,10,22,25],[152,38,0,0,25,5,118,8,15,18],[188,24,20,0,0,7,146,9,18,21]]},
+    carro:{k:['uber','n99','indrive','outros','gorjeta'],d:[[220,95,40,0,8,190,10,22,30],[260,70,0,30,5,210,11,25,28],null,[310,120,45,0,12,240,12,28,35],[190,80,0,0,6,170,9,19,25],[240,90,30,0,9,200,10,23,30]]},
+    bike:{k:['ifood','99food','rappi','outros','gorjeta'],d:[[95,20,0,0,5,42,7,14,15],[110,0,15,0,3,48,8,16,15],null,[125,30,0,10,6,55,8,18,18],[80,15,0,0,4,38,6,12,12],[100,25,0,0,5,45,7,15,15]]}}[v||'moto'];
+  const out=[];
+  SAMPLE.d.forEach((b,i)=>{ if(!b)return; const n=SAMPLE.k.length, o={data:addDays(today,-(6-i)),exemplo:true};
+    SAMPLE.k.forEach((p,j)=>o[p]=b[j]); o.km=b[n];o.horas=b[n+1];o.entregas=b[n+2];o.extra=b[n+3]; out.push(o) });
+  return out;
+}
+let S;
+try{S=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){S=null}
+const novo=!S||!S.cfg;
+if(novo){S={cfg:JSON.parse(JSON.stringify(DEF)),dias:[],manut:[]}}
+if(!S.cfg.veiculo)S.cfg.veiculo='moto';
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+const $=id=>document.getElementById(id);
+const num=v=>{if(v==null)return 0;const n=parseFloat(String(v).replace(/\./g,'').replace(',','.'));return isFinite(n)?n:0};
+const numIn=v=>{ if(v==null||v==='')return 0; let s=String(v).trim(); if(s.includes(','))s=s.replace(/\./g,'').replace(',','.'); const n=parseFloat(s); return isFinite(n)?n:0};
+const brl=(v,dec=2)=>(v=+v||0,(v<0?'−':'')+'R$ '+Math.abs(v).toLocaleString('pt-BR',{minimumFractionDigits:dec,maximumFractionDigits:dec}));
+const fmt=(v,d=0)=>(+v||0).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const inStr=v=>v?String(v).replace('.',','):'';
+const dataBR=s=>{const d=new Date(s+'T12:00:00');return d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'})};
+
+function custos(){const c=S.cfg;
+  const comb=V().fuel?c.gas/Math.max(c.consumo,1):0;
+  const manut=c.itens.reduce((a,i)=>a+(i.km>0?i.valor/i.km:0),0);
+  const fixoMes=c.parcela+c.docs+c.cel+(c.mei?DAS_2026:0);
+  return {comb,manut,deprec:c.deprec,porKm:comb+manut+c.deprec,fixoMes,fixoDia:fixoMes/Math.max(c.dias,1)};
+}
+function calcDia(d){const k=custos();
+  const bruto=PLAT.reduce((a,p)=>a+(d[p]||0),0);
+  d.km=d.km||0;d.horas=d.horas||0;d.entregas=d.entregas||0;const comb=d.km*k.comb, manut=d.km*k.manut, dep=d.km*k.deprec, fixo=bruto>0||d.km>0?k.fixoDia:0, extra=d.extra||0;
+  const lucro=bruto-comb-manut-dep-fixo-extra;
+  return {bruto,comb,manut,dep,fixo,extra,lucro,custo:comb+manut+dep+fixo+extra,
+    hora:d.horas>0?lucro/d.horas:0,porKm:d.km>0?bruto/d.km:0,porEntrega:d.entregas>0?lucro/d.entregas:0};
+}
+
+/* ---------- HOJE ---------- */
+const F={km:'d-km',horas:'d-horas',entregas:'d-entregas',extra:'d-extra'};
+function buildPlats(){$('d-plats').innerHTML=V().plats.map(p=>`<label class="f">${PLATS[p]}<div class="prefix"><input id="d-p-${p}" inputmode="decimal" placeholder="0,00"></div></label>`).join('')}
+function formDia(){const data=$('d-data').value||today;const base=S.dias.find(x=>x.data===data)||{};
+  const d=Object.assign({},base,{data});
+  V().plats.forEach(p=>d[p]=numIn($('d-p-'+p).value));
+  Object.keys(F).forEach(k=>d[k]=numIn($(F[k]).value));return d}
+function fillForm(data){const d=S.dias.find(x=>x.data===data);$('d-data').value=data;
+  V().plats.forEach(p=>$('d-p-'+p).value=d?inStr(d[p]):'');
+  Object.keys(F).forEach(k=>$(F[k]).value=d?inStr(d[k]):'');}
+function applyLabels(){const v=V(),c=S.cfg;
+  buildPlats();
+  document.querySelectorAll('.lbl-un').forEach(e=>e.textContent=v.Un);
+  $('d-nota').textContent=v.fuel?`O combustível e o desgaste ${v.de} são calculados pelos km, com base na aba ${v.rot}.`:`O desgaste ${v.de} é calculado pelos km, com base na aba ${v.rot}.`;
+  $('tab-vei').innerHTML=`<svg viewBox="0 0 24 24">${ICON[c.veiculo]}</svg>${v.rot}`;
+  $('mo-caixa-t').textContent='Caixinha '+v.de;
+  document.querySelectorAll('.fuel').forEach(e=>e.hidden=!v.fuel);
+  $('c-docs-l').firstElementChild.textContent=v.docsLbl;
+  $('mei-ocup').innerHTML=v.ocup;
+}
+function renderHoje(){
+  const d=formDia(), r=calcDia(d), c=S.cfg;
+  const isToday=d.data===today;
+  document.querySelector('#tab-hoje .hero .eyebrow').textContent=isToday?'No seu bolso hoje':'No seu bolso em '+dataBR(d.data);
+  $('h-lucro').textContent=brl(r.lucro,0); $('h-lucro').classList.toggle('neg',r.lucro<0);
+  $('h-sub').textContent=r.bruto>0?`O app mostrou ${brl(r.bruto)}. ${V().rot==='Bike'?'Bike':V().rot}, custos fixos e gastos do dia levaram ${brl(r.custo)}.`:'Preencha os ganhos e os km abaixo para ver o seu lucro de verdade.';
+  $('h-pills').innerHTML=`<span class="pill"><b>${brl(r.hora)}</b>/hora</span><span class="pill"><b>${brl(r.porKm)}</b>/km</span><span class="pill"><b>${fmt(d.entregas)}</b>${V().un}</span>`;
+  const pct=c.meta>0?Math.max(0,Math.min(100,r.lucro/c.meta*100)):0;
+  $('m-meta').textContent=brl(c.meta,0); $('m-bar').style.width=pct+'%';
+  const falta=c.meta-r.lucro;
+  if(r.bruto<=0) $('m-txt').textContent=`Meta de lucro líquido: ${brl(c.meta,0)}. Ajuste na aba ${V().rot}.`;
+  else if(falta<=0) $('m-txt').textContent=`Meta batida. Você passou ${brl(-falta)} do objetivo.`;
+  else {
+    const partes=[];
+    if(r.hora>0){const h=falta/r.hora;partes.push(`${Math.floor(h)}h${String(Math.round((h%1)*60)).padStart(2,'0')} no seu ritmo atual`)}
+    if(r.porEntrega>0)partes.push(`${Math.ceil(falta/r.porEntrega)} ${V().un}`);
+    $('m-txt').textContent=`Faltam ${brl(falta)}`+(partes.length?` ≈ ${partes.join(' ou ')}.`:'.');
+  }
+  $('h-ledger').innerHTML=[
+    ['O app mostrou',r.bruto,''],
+    ...(V().fuel?[['Combustível',-r.comb,`${fmt(d.km/Math.max(c.consumo,1),1)} L`]]:[]),
+    ['Desgaste '+V().de,-r.manut,'vai p/ caixinha'],
+    ['Desvalorização '+V().de,-r.dep,''],
+    ['Custos fixos do dia',-r.fixo,c.mei?'inclui DAS':''],
+    ['Alimentação e outros',-r.extra,'']
+  ].map(([l,v,t])=>`<div class="row"><span class="lbl">${l}${t?`<span class="tag">${t}</span>`:''}</span><span class="val ${v<0?'minus':''}">${v<0?'− '+brl(-v):brl(v)}</span></div>`).join('')
+  +`<div class="row total"><span class="lbl">Lucro real</span><span class="val">${brl(r.lucro)}</span></div>`;
+}
+
+/* ---------- SEMANA ---------- */
+function renderSemana(){
+  const ini=addDays(today,-6);
+  const dias=[];for(let i=0;i<7;i++){const s=addDays(ini,i);dias.push({s,d:S.dias.find(x=>x.data===s)})}
+  let L=0,B=0,H=0,K=0;
+  dias.forEach(x=>{if(x.d){const r=calcDia(x.d);x.r=r;L+=r.lucro;B+=r.bruto;H+=x.d.horas;K+=x.d.km}});
+  $('s-lucro').textContent=brl(L,0);$('s-bruto').textContent=brl(B,0);$('s-hora').textContent=H?brl(L/H):'–';$('s-km').textContent=fmt(K)+' km';
+  $('s-periodo').textContent=`${dataBR(ini).slice(5)} a ${dataBR(today).slice(5)}`;
+  // gráfico
+  const W=340,Hh=180,pl=36,pb=22,pt=10,cw=(W-pl-8)/7;
+  const max=Math.max(100,...dias.map(x=>x.r?x.r.bruto:0));
+  const step=max>300?100:50, top=Math.ceil(max/step)*step;
+  const y=v=>pt+(Hh-pt-pb)*(1-Math.max(v,0)/top);
+  let g='';
+  for(let v=0;v<=top;v+=step){g+=`<line x1="${pl}" x2="${W-4}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${pl-6}" y="${y(v)+4}" text-anchor="end">${v}</text>`}
+  dias.forEach((x,i)=>{const cx=pl+cw*i+cw/2,bw=Math.min(22,cw*.62);
+    if(x.r){g+=`<rect x="${cx-bw/2}" y="${y(x.r.bruto)}" width="${bw}" height="${y(0)-y(x.r.bruto)}" rx="3" fill="var(--bar-ghost)"/>`;
+      g+=`<rect x="${cx-bw/2+3}" y="${y(x.r.lucro)}" width="${bw-6}" height="${Math.max(0,y(0)-y(x.r.lucro))}" rx="2" fill="var(--accent)"/>`}
+    const wd=new Date(x.s+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','');
+    g+=`<text x="${cx}" y="${Hh-6}" text-anchor="middle" ${x.s===today?'style="fill:var(--fg);font-weight:600"':''}>${wd}</text>`});
+  $('s-chart').innerHTML=g;
+  // lista
+  const lista=[...S.dias].sort((a,b)=>b.data.localeCompare(a.data));
+  $('s-lista').innerHTML=lista.length?lista.map(d=>{const r=calcDia(d);return `<div class="row"><div class="d"><b>${dataBR(d.data)}${d.exemplo?'<span class="tag">exemplo</span>':''}</b><small>${fmt(d.km)} km · ${fmt(d.horas,1)} h · ${fmt(d.entregas)} ${V().un} · app ${brl(r.bruto,0)}</small></div><div style="display:flex;gap:8px;align-items:center"><b>${brl(r.lucro,0)}</b><button class="btn-sm" data-edit="${d.data}">Editar</button><button class="btn-sm danger" data-del="${d.data}">Apagar</button></div></div>`}).join(''):'<p class="note">Nenhum dia registrado ainda. Registre o primeiro na aba Hoje.</p>';
+  $('s-sample').hidden=!S.dias.some(d=>d.exemplo);
+}
+$('s-lista').addEventListener('click',e=>{
+  const ed=e.target.dataset.edit,del=e.target.dataset.del;
+  if(ed){fillForm(ed);go('hoje');renderHoje()}
+  if(del){ if(e.target.dataset.confirm){S.dias=S.dias.filter(d=>d.data!==del);save();renderAll();toast('Dia apagado')}
+    else{e.target.dataset.confirm='1';e.target.textContent='Confirmar';setTimeout(()=>{if(e.target.isConnected){delete e.target.dataset.confirm;e.target.textContent='Apagar'}},3000)} }
+});
+$('b-limpar').addEventListener('click',()=>{S.dias=S.dias.filter(d=>!d.exemplo);S.manut=S.manut.filter(m=>!m.exemplo);save();fillForm(today);renderAll();toast('Exemplos apagados')});
+
+/* ---------- MOTO ---------- */
+function kmDesde(data){return S.dias.filter(d=>d.data>data).reduce((a,d)=>a+d.km,0)}
+function renderMoto(){
+  const k=custos(),c=S.cfg;
+  $('mo-km').textContent='R$ '+fmt(k.porKm,2);
+  $('mo-sub').textContent=(V().fuel?`Combustível ${brl(k.comb)} + `:'')+`manutenção ${brl(k.manut)} + desvalorização ${brl(k.deprec)} por km. Fixos: ${brl(k.fixoMes,0)}/mês.`;
+  const totalKm=S.dias.reduce((a,d)=>a+d.km,0);
+  let caixa=0; const html=[];
+  c.itens.forEach(it=>{
+    const ult=S.manut.filter(m=>m.item===it.id).sort((a,b)=>b.data.localeCompare(a.data))[0];
+    const rodado=ult?kmDesde(ult.data):totalKm;
+    caixa+=rodado*(it.valor/it.km);
+    const resta=it.km-rodado, p=Math.min(100,rodado/it.km*100);
+    const cls=resta<=0?'s-bad':resta<it.km*0.15?'s-warn':'s-ok';
+    const txt=resta<=0?`Atrasado ${fmt(-resta)} km`:`Faltam ${fmt(resta)} km`;
+    html.push(`<div class="mitem"><div class="row"><span>${it.nome} <span class="tag">a cada ${fmt(it.km)} km</span></span><span class="status ${cls}">${txt}</span></div><div class="progress ${resta<=0?'over':''}"><i style="width:${p}%"></i></div></div>`);
+  });
+  $('mo-itens').innerHTML=html.join('');
+  $('mo-caixa').textContent=brl(caixa);
+  $('mn-item').innerHTML=c.itens.map(i=>`<option value="${i.id}">${i.nome}</option>`).join('');
+}
+function fillCfg(){const c=S.cfg;
+  $('c-vei').value=c.veiculo;$('c-vei-nota').hidden=true;$('c-consumo').value=inStr(c.consumo);$('c-gas').value=inStr(c.gas);$('c-meta').value=inStr(c.meta);$('c-dias').value=c.dias;
+  $('c-parcela').value=inStr(c.parcela);$('c-docs').value=inStr(c.docs);$('c-cel').value=inStr(c.cel);$('c-deprec').value=inStr(c.deprec);
+  $('c-itens').innerHTML=c.itens.map(i=>`<div class="grid3" style="align-items:end"><span style="font-weight:600;align-self:center">${i.nome}</span><label class="f">A cada (km)<input id="ci-km-${i.id}" inputmode="numeric" value="${i.km}"></label><label class="f">Custo<div class="prefix"><input id="ci-v-${i.id}" inputmode="decimal" value="${inStr(i.valor)}"></div></label></div>`).join('');
+  $('c-fatant').value=inStr(c.fatAnt);
+}
+$('c-vei').addEventListener('change',()=>{$('c-vei-nota').hidden=$('c-vei').value===S.cfg.veiculo});
+$('f-cfg').addEventListener('submit',e=>{e.preventDefault();const c=S.cfg;
+  const nv=$('c-vei').value;
+  if(nv!==c.veiculo){applyVehicle(nv);save();applyLabels();fillCfg();fillForm($('d-data').value||today);renderAll();toast(`Pronto: agora com ${VEI[nv].rot.toLowerCase()}. Confira os custos.`);return}
+  c.consumo=numIn($('c-consumo').value)||DEF.consumo;c.gas=numIn($('c-gas').value);c.meta=numIn($('c-meta').value);c.dias=Math.max(1,Math.round(numIn($('c-dias').value))||24);
+  c.parcela=numIn($('c-parcela').value);c.docs=numIn($('c-docs').value);c.cel=numIn($('c-cel').value);c.deprec=numIn($('c-deprec').value);
+  c.itens.forEach(i=>{i.km=Math.max(1,numIn($('ci-km-'+i.id).value));i.valor=numIn($('ci-v-'+i.id).value)});
+  save();renderAll();toast('Configurações salvas')});
+$('f-manut').addEventListener('submit',e=>{e.preventDefault();
+  const m={item:$('mn-item').value,valor:numIn($('mn-valor').value),data:$('mn-data').value||today};
+  S.manut.push(m);save();$('mn-valor').value='';renderAll();toast('Manutenção registrada. Contador zerado.')});
+
+/* ---------- MEI ---------- */
+function setMei(v){S.cfg.mei=v;save();$('t-com').setAttribute('aria-pressed',v);$('t-sem').setAttribute('aria-pressed',!v);$('mei-com').hidden=!v;$('mei-sem').hidden=v;renderAll()}
+$('t-com').addEventListener('click',()=>setMei(true));$('t-sem').addEventListener('click',()=>setMei(false));
+function renderMei(){
+  const c=S.cfg,k=custos();
+  $('mei-com').hidden=!c.mei;$('mei-sem').hidden=c.mei;$('t-com').setAttribute('aria-pressed',c.mei);$('t-sem').setAttribute('aria-pressed',!c.mei);
+  const media=(()=>{const ds=S.dias.slice(-14);if(!ds.length)return 0;return ds.reduce((a,d)=>a+calcDia(d).lucro,0)/ds.length})();
+  $('mei-conta').innerHTML=media>0?`No seu ritmo, R$ 86,05 equivale a cerca de <b>${fmt(Math.ceil(DAS_2026/media*10)/10,1)} dia</b> de lucro por mês, ou ${brl(DAS_2026/Math.max(c.dias,1))} por dia trabalhado.`:'R$ 86,05 por mês equivale a cerca de R$ 3,59 por dia trabalhado (24 dias).';
+  // DAS: vence dia 20
+  const now=new Date(today+'T12:00:00');let venc=new Date(now.getFullYear(),now.getMonth(),20,12);if(now.getDate()>20)venc=new Date(now.getFullYear(),now.getMonth()+1,20,12);
+  const dd=Math.round((venc-now)/86400000);
+  $('das-dias').textContent=dd===0?'Hoje':dd+(dd===1?' dia':' dias');
+  const comp=new Date(venc.getFullYear(),venc.getMonth()-1,1).toLocaleDateString('pt-BR',{month:'long'});
+  $('das-data').textContent=`${venc.toLocaleDateString('pt-BR',{day:'2-digit',month:'long'})} · ${brl(DAS_2026)} · referente a ${comp}`;
+  // limite
+  const ano=today.slice(0,4);$('lim-ano').textContent=ano;
+  const dAno=S.dias.filter(d=>d.data.startsWith(ano));
+  const fat=c.fatAnt+dAno.reduce((a,d)=>a+calcDia(d).bruto,0);
+  const mediaBruta=dAno.length?dAno.reduce((a,d)=>a+calcDia(d).bruto,0)/dAno.length:0;
+  const fim=new Date(+ano,11,31,12), restMes=Math.max(0,(fim-now)/86400000)/30.4;
+  const proj=fat+mediaBruta*c.dias*restMes;
+  const pct=fat/LIMITE_MEI*100;
+  $('lim-fat').textContent=brl(fat);$('lim-proj').textContent=brl(proj,0);$('lim-pct').textContent=fmt(pct,1)+'%';
+  $('lim-bar').style.width=Math.min(100,pct)+'%';$('lim-wrap').classList.toggle('over',proj>LIMITE_MEI);
+  $('lim-msg').textContent=proj>LIMITE_MEI?`Atenção: no ritmo atual você passa do limite em cerca de ${brl(proj-LIMITE_MEI,0)}. Converse com um contador antes de dezembro.`:proj>LIMITE_MEI*0.8?'Você está perto do limite. Acompanhe mês a mês.':'No ritmo atual você fica dentro do limite do MEI.';
+}
+$('c-fatant').addEventListener('change',()=>{S.cfg.fatAnt=numIn($('c-fatant').value);save();renderMei()});
+
+/* ---------- geral ---------- */
+function renderAll(){$('tab-vei').setAttribute('aria-selected',!$('tab-moto').hidden);renderHoje();renderSemana();renderMoto();renderMei()}
+function go(t){document.querySelectorAll('section.tab').forEach(s=>s.hidden=s.id!=='tab-'+t);
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));window.scrollTo(0,0)}
+document.querySelectorAll('nav.tabs button').forEach(b=>b.addEventListener('click',()=>go(b.dataset.tab)));
+let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2200)}
+
+$('f-dia').addEventListener('input',renderHoje);
+$('d-data').addEventListener('change',()=>{fillForm($('d-data').value||today);renderHoje()});
+$('f-dia').addEventListener('submit',e=>{e.preventDefault();const d=formDia();
+  if(!d.km&&!PLAT.some(p=>d[p])){toast('Preencha ao menos os ganhos ou os km');return}
+  delete d.exemplo;S.dias=S.dias.filter(x=>x.data!==d.data);S.dias.push(d);save();renderAll();toast('Dia salvo')});
+
+$('hoje-str').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
+$('mn-data').value=today;
+applyLabels();fillForm(today);fillCfg();renderAll();
+
+/* ---------- corre (km automático) ---------- */
+const NATIVE=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
+const BG=NATIVE?window.Capacitor.registerPlugin('BackgroundGeolocation'):null;
+let watcherId=null,coTick=null;
+function hav(a,b){const R=6371000,r=x=>x*Math.PI/180;const dLa=r(b.lat-a.lat),dLo=r(b.lng-a.lng);
+  const h=Math.sin(dLa/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dLo/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
+// Filtro: ignora leituras imprecisas, tremidas parado e saltos impossíveis
+function addFix(c,loc){
+  if(loc.accuracy!=null&&loc.accuracy>35)return false;
+  const p={lat:loc.latitude,lng:loc.longitude,t:loc.time||Date.now()};
+  const prev=c.prev;c.prev=p;
+  if(!c.last){c.last=p;return true}
+  // salto impossível em relação à leitura anterior (> 200 km/h): descarta
+  if(prev){const dp=hav(prev,p),dtp=(p.t-prev.t)/1000;if(dtp>0&&dp/dtp>55)return false}
+  const d=hav(c.last,p),dt=Math.max(1,(p.t-c.last.t)/1000);
+  if(d<12)return false;                 // tremor do GPS
+  if(d<40&&d/dt<1)return false;         // parado: deriva lenta do sinal
+  if(d/dt>55)return false;
+  c.m+=d;c.last=p;return true}
+function onFix(loc){const c=S.corre;if(!c||!c.ativo)return;if(addFix(c,loc)){save();renderCorre()}}
+async function startWatcher(){
+  if(!BG)return true;
+  try{const LN=window.Capacitor.registerPlugin('LocalNotifications');const st=await LN.checkPermissions();if(st.display!=='granted')await LN.requestPermissions()}catch(_){}
+  try{
+    watcherId=await BG.addWatcher({backgroundTitle:'Meu Corre está contando seus km',
+      backgroundMessage:'Encerre o corre no app quando terminar.',requestPermissions:true,stale:false,distanceFilter:10},
+      (loc,err)=>{if(err){if(err.code==='NOT_AUTHORIZED'){toast('Permita a localização para contar os km');try{BG.openSettings()}catch(_){}}return}onFix(loc)});
+    return true;
+  }catch(e){toast('Não foi possível ligar o GPS');return false}
+}
+function stopWatcher(){if(BG&&watcherId!=null){BG.removeWatcher({id:watcherId}).catch(()=>{});watcherId=null}}
+function fmtTempo(ms){const m=Math.floor(ms/60000);return `${Math.floor(m/60)}h${String(m%60).padStart(2,'0')}`}
+function renderCorre(){
+  const c=S.corre,on=!!(c&&c.ativo),gps=on?c.modo==='gps':NATIVE;
+  $('corre-card').classList.toggle('on',on);$('co-on').hidden=!on;$('co-off').hidden=on;$('co-status').hidden=!on;
+  $('co-desc').textContent=NATIVE?'Toque em Iniciar ao começar a rodar. O GPS conta os km sozinho, mesmo com a tela apagada ou com o iFood aberto.':'Anote o km do painel e toque em Iniciar. No fim do dia, informe o km do painel de novo: o app calcula os km e as horas.';
+  $('co-odo-ini-l').hidden=NATIVE;
+  if(on){$('co-tempo').textContent=fmtTempo(Date.now()-c.inicio);
+    $('co-km-l').textContent=gps?'Km pelo GPS':'Km';$('co-km').textContent=gps?fmt(c.m/1000,1)+' km':'no fim';
+    $('co-odo-fim-l').hidden=gps;
+    $('co-hint').textContent=gps?'Pode apagar a tela e usar os outros apps. Uma notificação mostra que o Meu Corre está contando.':(c.odoIni?`Começou com ${fmt(c.odoIni)} km no painel.`:'Sem km inicial: no fim, digite os km do dia no registro.');}
+  clearInterval(coTick);if(on)coTick=setInterval(()=>{$('co-tempo').textContent=fmtTempo(Date.now()-S.corre.inicio)},15000);
+}
+$('co-start').addEventListener('click',async()=>{
+  S.corre={ativo:true,inicio:Date.now(),m:0,last:null,modo:NATIVE?'gps':'odo',odoIni:NATIVE?0:numIn($('co-odo-ini').value)};
+  save();renderCorre();
+  if(NATIVE&&!(await startWatcher())){S.corre=null;save();renderCorre();return}
+  toast('Corre iniciado. Bom trabalho!')});
+$('co-stop').addEventListener('click',e=>{const b=e.currentTarget,c=S.corre;if(!c)return;
+  if(!b.dataset.confirm){b.dataset.confirm='1';b.textContent='Toque de novo para encerrar';setTimeout(()=>{delete b.dataset.confirm;b.textContent='Encerrar corre'},4000);return}
+  delete b.dataset.confirm;b.textContent='Encerrar corre';
+  stopWatcher();
+  const horas=Math.round((Date.now()-c.inicio)/360000)/10;
+  let km=0;
+  if(c.modo==='gps')km=c.m/1000;
+  else{const fim=numIn($('co-odo-fim').value);if(c.odoIni&&fim>c.odoIni&&fim-c.odoIni<2000)km=fim-c.odoIni}
+  km=Math.round(km*10)/10;
+  const data=iso(new Date(c.inicio));const dia=S.dias.find(x=>x.data===data)||{data};
+  dia.km=Math.round(((dia.km||0)+km)*10)/10;dia.horas=Math.round(((dia.horas||0)+horas)*10)/10;delete dia.exemplo;
+  S.dias=S.dias.filter(x=>x.data!==data);S.dias.push(dia);S.corre=null;
+  $('co-odo-ini').value='';$('co-odo-fim').value='';
+  save();fillForm(data);renderAll();renderCorre();
+  toast(km?`Corre encerrado: ${fmt(km,1)} km em ${fmtTempo(horas*3600000)}. Agora informe os ganhos.`:`Corre encerrado: ${fmtTempo(horas*3600000)}. Informe os km e os ganhos.`);
+  setTimeout(()=>{$('f-dia').scrollIntoView({behavior:'smooth'});const f=document.querySelector('#d-plats input');if(f)f.focus()},400)});
+renderCorre();
+if(S.corre&&S.corre.ativo&&S.corre.modo==='gps'&&NATIVE){startWatcher()}
+if(NATIVE)document.addEventListener('visibilitychange',()=>{if(!document.hidden)renderCorre()});
+
+/* ---------- primeira vez ---------- */
+if(novo) $('setup').hidden=false;
+let suV='moto';
+$('su-vei').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;suV=b.dataset.v;
+  $('su-vei').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  $('su-fuel').hidden=!VEI[suV].fuel;$('su-consumo').value=VEI[suV].consumo||'';$('su-meta').value=VEI[suV].meta});
+$('f-setup').addEventListener('submit',e=>{e.preventDefault();const c=S.cfg;
+  applyVehicle(suV);
+  if(VEI[suV].fuel){c.consumo=numIn($('su-consumo').value)||VEI[suV].consumo;c.gas=numIn($('su-gas').value)||DEF.gas}
+  c.meta=numIn($('su-meta').value)||VEI[suV].meta;c.mei=$('su-mei').checked;
+  if($('su-exemplo').checked){S.dias=sampleDays(suV);S.manut=[{data:addDays(today,-20),item:VEI[suV].itens[0].id,valor:VEI[suV].itens[0].valor,exemplo:true}]}
+  save();$('setup').hidden=true;applyLabels();fillCfg();
+  if($('su-exemplo').checked){fillForm(S.dias[S.dias.length-1].data)}else fillForm(today);
+  renderAll();toast('Tudo pronto. Bom corre!')});
+
+/* ---------- backup ---------- */
+$('b-export').addEventListener('click',()=>{
+  const blob=new Blob([JSON.stringify({app:'meu-corre',versao:1,exportado:new Date().toISOString(),dados:S},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`meu-corre-backup-${today}.json`;
+  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast('Backup baixado')});
+$('b-import').addEventListener('click',()=>$('f-import').click());
+$('f-import').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();r.onload=()=>{try{const j=JSON.parse(r.result);const d=j.dados||j;
+    if(!d.cfg||!Array.isArray(d.dias))throw 0;
+    S={cfg:Object.assign(JSON.parse(JSON.stringify(DEF)),d.cfg),dias:d.dias,manut:d.manut||[]};
+    if(!S.cfg.veiculo)S.cfg.veiculo='moto';save();applyLabels();fillCfg();fillForm(today);renderAll();toast(`Backup restaurado: ${S.dias.length} dias`)}
+  catch(err){toast('Este arquivo não é um backup do Meu Corre')}};r.readAsText(f);e.target.value=''});
+$('b-reset').addEventListener('click',e=>{const b=e.currentTarget;
+  if(b.dataset.confirm){try{localStorage.removeItem(KEY)}catch(_){ }location.reload()}
+  else{b.dataset.confirm='1';b.textContent='Toque de novo para apagar tudo';setTimeout(()=>{delete b.dataset.confirm;b.textContent='Apagar todos os dados'},4000)}});
+
+/* ---------- instalar ---------- */
+const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+let deferred=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;if(!standalone&&!NATIVE)$('b-install').hidden=false});
+$('install-btn').addEventListener('click',async()=>{
+  if(deferred){deferred.prompt();await deferred.userChoice;deferred=null;$('b-install').hidden=true}
+  else{$('install-txt').textContent='No iPhone: toque em Compartilhar e depois em "Adicionar à Tela de Início".';$('install-btn').hidden=true}});
+if(!standalone&&!NATIVE&&/iphone|ipad|ipod/i.test(navigator.userAgent)){$('b-install').hidden=false}
+window.addEventListener('appinstalled',()=>{$('b-install').hidden=true;toast('App instalado')});
+if(!NATIVE&&'serviceWorker' in navigator&&location.protocol!=='file:'){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
+})();
+</script>
+</body>
+</html>
