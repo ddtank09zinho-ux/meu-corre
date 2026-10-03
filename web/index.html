@@ -629,7 +629,7 @@ $('mn-data').value=today;
 applyLabels();fillForm(today);fillCfg();renderAll();
 
 /* ---------- corre (km automático) ---------- */
-const NATIVE=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
+const NATIVE=!!(window.Capacitor&&window.Capacitor.registerPlugin&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
 const BG=NATIVE?window.Capacitor.registerPlugin('BackgroundGeolocation'):null;
 let watcherId=null,coTick=null;
 function hav(a,b){const R=6371000,r=x=>x*Math.PI/180;const dLa=r(b.lat-a.lat),dLo=r(b.lng-a.lng);
