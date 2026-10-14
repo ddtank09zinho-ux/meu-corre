@@ -152,7 +152,7 @@ img{max-width:100%}
       <div class="logo" aria-hidden="true"><span>MC</span></div>
       <div><h1>Meu Corre</h1><small id="hoje-str"></small></div>
     </div>
-    <span class="chip">Beta 0.3</span>
+    <span class="chip">Beta 0.4</span>
   </header>
 
   <!-- HOJE -->
@@ -187,6 +187,22 @@ img{max-width:100%}
       <div class="row"><h3>Meta do dia</h3><span class="val" id="m-meta"></span></div>
       <div class="progress"><i id="m-bar" style="width:0%"></i></div>
       <p class="note" id="m-txt"></p>
+      <p class="note" id="m-min" style="color:var(--fg)"></p>
+    </div>
+
+    <div class="card" id="of-card" hidden>
+      <div class="row"><h2>Ofertas da 99</h2><span class="status" id="of-status"></span></div>
+      <p class="note" id="of-desc">Quando chegar uma entrega no app da 99, o Meu Corre mostra um balão por cima com o valor por km e quanto sobra.</p>
+      <div class="btnrow">
+        <button type="button" class="btn-main" id="of-ativar">Ativar leitura de ofertas</button>
+        <button type="button" id="of-testar">Testar balão</button>
+      </div>
+      <details>
+        <summary>O Android bloqueou ("configuração restrita")?</summary>
+        <p class="note" style="margin-top:8px">Toque no botão abaixo, depois nos 3 pontinhos (⋮) no canto de cima e em <b>Permitir configurações restritas</b>. Volte e toque em Ativar de novo.</p>
+        <button type="button" id="of-info" style="margin-top:8px">Abrir informações do app</button>
+      </details>
+      <p class="note" id="of-ultima"></p>
     </div>
 
     <div class="card">
@@ -263,6 +279,7 @@ img{max-width:100%}
         <label class="f fuel">Combustível (R$/litro)<input id="c-gas" inputmode="decimal"></label>
         <label class="f">Meta de lucro por dia<div class="prefix"><input id="c-meta" inputmode="decimal"></div></label>
         <label class="f">Dias trabalhados por mês<input id="c-dias" inputmode="numeric"></label>
+        <label class="f">Mínimo por km (vazio = automático)<div class="prefix"><input id="c-minkm" inputmode="decimal" placeholder="auto"></div></label>
       </div>
       <details>
         <summary>Custos mensais fixos</summary>
@@ -289,7 +306,7 @@ img{max-width:100%}
       </div>
       <input type="file" id="f-import" accept=".json,application/json" hidden>
       <button type="button" class="danger" id="b-reset">Apagar todos os dados</button>
-      <p class="note">Meu Corre · versão beta 0.3</p>
+      <p class="note">Meu Corre · versão beta 0.4</p>
     </div>
   </section>
 
@@ -453,6 +470,10 @@ function custos(){const c=S.cfg;
   const fixoMes=c.parcela+c.docs+c.cel+(c.mei?DAS_2026:0);
   return {comb,manut,deprec:c.deprec,porKm:comb+manut+c.deprec,fixoMes,fixoDia:fixoMes/Math.max(c.dias,1)};
 }
+const KM_DIA={moto:130,carro:180,bike:45};
+function minKm(){const c=S.cfg,k=custos();if(c.minKm>0)return c.minKm;
+  const ds=S.dias.filter(d=>d.km>0).slice(-14);const kmDia=ds.length?ds.reduce((a,d)=>a+d.km,0)/ds.length:(KM_DIA[c.veiculo]||130);
+  return Math.round((k.porKm+(c.meta+k.fixoDia)/Math.max(kmDia,1))*20)/20}
 function calcDia(d){const k=custos();
   const bruto=PLAT.reduce((a,p)=>a+(d[p]||0),0);
   d.km=d.km||0;d.horas=d.horas||0;d.entregas=d.entregas||0;const comb=d.km*k.comb, manut=d.km*k.manut, dep=d.km*k.deprec, fixo=bruto>0||d.km>0?k.fixoDia:0, extra=d.extra||0;
@@ -490,6 +511,7 @@ function renderHoje(){
   $('h-pills').innerHTML=`<span class="pill"><b>${brl(r.hora)}</b>/hora</span><span class="pill"><b>${brl(r.porKm)}</b>/km</span><span class="pill"><b>${fmt(d.entregas)}</b>${V().un}</span>`;
   const pct=c.meta>0?Math.max(0,Math.min(100,r.lucro/c.meta*100)):0;
   $('m-meta').textContent=brl(c.meta,0); $('m-bar').style.width=pct+'%';
+  $('m-min').innerHTML=`Para bater a meta, aceite ${V().un} acima de <b>${brl(minKm())}/km</b>.`;
   const falta=c.meta-r.lucro;
   if(r.bruto<=0) $('m-txt').textContent=`Meta de lucro líquido: ${brl(c.meta,0)}. Ajuste na aba ${V().rot}.`;
   else if(falta<=0) $('m-txt').textContent=`Meta batida. Você passou ${brl(-falta)} do objetivo.`;
@@ -569,14 +591,14 @@ function fillCfg(){const c=S.cfg;
   $('c-vei').value=c.veiculo;$('c-vei-nota').hidden=true;$('c-consumo').value=inStr(c.consumo);$('c-gas').value=inStr(c.gas);$('c-meta').value=inStr(c.meta);$('c-dias').value=c.dias;
   $('c-parcela').value=inStr(c.parcela);$('c-docs').value=inStr(c.docs);$('c-cel').value=inStr(c.cel);$('c-deprec').value=inStr(c.deprec);
   $('c-itens').innerHTML=c.itens.map(i=>`<div class="grid3" style="align-items:end"><span style="font-weight:600;align-self:center">${i.nome}</span><label class="f">A cada (km)<input id="ci-km-${i.id}" inputmode="numeric" value="${i.km}"></label><label class="f">Custo<div class="prefix"><input id="ci-v-${i.id}" inputmode="decimal" value="${inStr(i.valor)}"></div></label></div>`).join('');
-  $('c-fatant').value=inStr(c.fatAnt);
+  $('c-fatant').value=inStr(c.fatAnt);$('c-minkm').value=inStr(c.minKm||0);
 }
 $('c-vei').addEventListener('change',()=>{$('c-vei-nota').hidden=$('c-vei').value===S.cfg.veiculo});
 $('f-cfg').addEventListener('submit',e=>{e.preventDefault();const c=S.cfg;
   const nv=$('c-vei').value;
   if(nv!==c.veiculo){applyVehicle(nv);save();applyLabels();fillCfg();fillForm($('d-data').value||today);renderAll();toast(`Pronto: agora com ${VEI[nv].rot.toLowerCase()}. Confira os custos.`);return}
   c.consumo=numIn($('c-consumo').value)||DEF.consumo;c.gas=numIn($('c-gas').value);c.meta=numIn($('c-meta').value);c.dias=Math.max(1,Math.round(numIn($('c-dias').value))||24);
-  c.parcela=numIn($('c-parcela').value);c.docs=numIn($('c-docs').value);c.cel=numIn($('c-cel').value);c.deprec=numIn($('c-deprec').value);
+  c.parcela=numIn($('c-parcela').value);c.docs=numIn($('c-docs').value);c.cel=numIn($('c-cel').value);c.deprec=numIn($('c-deprec').value);c.minKm=numIn($('c-minkm').value);
   c.itens.forEach(i=>{i.km=Math.max(1,numIn($('ci-km-'+i.id).value));i.valor=numIn($('ci-v-'+i.id).value)});
   save();renderAll();toast('Configurações salvas')});
 $('f-manut').addEventListener('submit',e=>{e.preventDefault();
@@ -612,7 +634,7 @@ function renderMei(){
 $('c-fatant').addEventListener('change',()=>{S.cfg.fatAnt=numIn($('c-fatant').value);save();renderMei()});
 
 /* ---------- geral ---------- */
-function renderAll(){$('tab-vei').setAttribute('aria-selected',!$('tab-moto').hidden);renderHoje();renderSemana();renderMoto();renderMei()}
+function renderAll(){if(typeof syncOferta==='function')syncOferta();$('tab-vei').setAttribute('aria-selected',!$('tab-moto').hidden);renderHoje();renderSemana();renderMoto();renderMei()}
 function go(t){document.querySelectorAll('section.tab').forEach(s=>s.hidden=s.id!=='tab-'+t);
   document.querySelectorAll('nav.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));window.scrollTo(0,0)}
 document.querySelectorAll('nav.tabs button').forEach(b=>b.addEventListener('click',()=>go(b.dataset.tab)));
@@ -695,6 +717,22 @@ $('co-stop').addEventListener('click',e=>{const b=e.currentTarget,c=S.corre;if(!
 renderCorre();
 if(S.corre&&S.corre.ativo&&S.corre.modo==='gps'&&NATIVE){startWatcher()}
 if(NATIVE)document.addEventListener('visibilitychange',()=>{if(!document.hidden)renderCorre()});
+
+/* ---------- ofertas da 99 ---------- */
+const OF=NATIVE?window.Capacitor.registerPlugin('Oferta'):null;
+function syncOferta(){try{if(!OF)return;OF.setConfig({custoKm:custos().porKm,minKm:minKm(),ativo:true}).catch(()=>{})}catch(_){}}
+async function renderOferta(){if(!OF)return;$('of-card').hidden=false;let st={};try{st=await OF.status()}catch(_){}
+  $('of-status').textContent=st.ligado?'Ligada':'Desligada';$('of-status').className='status '+(st.ligado?'s-ok':'s-warn');
+  $('of-ativar').textContent=st.ligado?'Configurações de acessibilidade':'Ativar leitura de ofertas';
+  const t=[];if(st.ultima)t.push('Última oferta lida: '+st.ultima+' ('+new Date(st.ultimaEm).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+')');
+  if(st.falha&&st.falhaEm>(st.ultimaEm||0))t.push('Não consegui ler a última oferta. Mande um print desta tela para o suporte.');
+  $('of-ultima').textContent=t.join(' ')}
+if(OF){$('of-ativar').addEventListener('click',()=>{toast('Procure "Meu Corre" e ative');OF.abrirConfiguracoes()});
+  $('of-info').addEventListener('click',()=>OF.abrirInfoApp());
+  $('of-testar').addEventListener('click',async()=>{syncOferta();let r={};try{r=await OF.testar()}catch(_){}
+    toast(r.ok?'Balão de teste exibido no topo da tela':'Ative a leitura de ofertas primeiro')});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)renderOferta()});
+  syncOferta();renderOferta()}
 
 /* ---------- primeira vez ---------- */
 if(novo) $('setup').hidden=false;

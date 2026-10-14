@@ -55,6 +55,33 @@ if os.path.isdir(RES):
             '    <string name="capacitor_background_geolocation_notification_color">#F5B800</string>\n</resources>')
         open(p, 'w').write(s)
 
+    # Leitor de ofertas da 99 (serviço de acessibilidade + plugin)
+    import shutil
+    NAT = os.path.join(ROOT, 'native')
+    JAVA = os.path.join(ROOT, 'android/app/src/main/java/br/app/meucorre')
+    os.makedirs(JAVA, exist_ok=True)
+    for f in ['OfertaParser.java', 'OfertaService.java', 'OfertaPlugin.java', 'MainActivity.java']:
+        shutil.copy(os.path.join(NAT, f), os.path.join(JAVA, f))
+    os.makedirs(f'{RES}/xml', exist_ok=True)
+    shutil.copy(os.path.join(NAT, 'oferta_service.xml'), f'{RES}/xml/oferta_service.xml')
+    p = f'{RES}/values/strings.xml'; s = open(p).read()
+    if 'oferta_service_desc' not in s:
+        s = s.replace('</resources>',
+            '    <string name="oferta_service_desc">Lê o valor e a distância das ofertas do app 99 para mostrar se a entrega vale a pena. Funciona só dentro do app 99 e não envia nada para a internet.</string>\n'
+            '    <string name="oferta_service_label">Meu Corre: análise de ofertas</string>\n</resources>')
+        open(p, 'w').write(s)
+    p = os.path.join(ROOT, 'android/app/src/main/AndroidManifest.xml'); s = open(p).read()
+    if 'OfertaService' not in s:
+        s = s.replace('</application>',
+            '        <service android:name=".OfertaService" android:exported="false"\n'
+            '            android:label="@string/oferta_service_label"\n'
+            '            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">\n'
+            '            <intent-filter><action android:name="android.accessibilityservice.AccessibilityService" /></intent-filter>\n'
+            '            <meta-data android:name="android.accessibilityservice" android:resource="@xml/oferta_service" />\n'
+            '        </service>\n    </application>', 1)
+        open(p, 'w').write(s)
+    assert 'OfertaService' in s, 'não consegui registrar o leitor de ofertas'
+
     # Versão e assinatura
     pkg = json.load(open(os.path.join(ROOT, 'package.json')))
     ver = pkg['version']; maj, mi, pa = [int(x) for x in ver.split('.')]
