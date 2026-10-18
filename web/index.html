@@ -203,6 +203,7 @@ img{max-width:100%}
         <button type="button" id="of-info" style="margin-top:8px">Abrir informações do app</button>
       </details>
       <p class="note" id="of-ultima"></p>
+      <p class="note" id="of-diag" style="white-space:pre-wrap;word-break:break-word;font-size:11px;opacity:.75"></p>
     </div>
 
     <div class="card">
@@ -306,7 +307,7 @@ img{max-width:100%}
       </div>
       <input type="file" id="f-import" accept=".json,application/json" hidden>
       <button type="button" class="danger" id="b-reset">Apagar todos os dados</button>
-      <p class="note">Meu Corre · versão beta 0.4</p>
+      <p class="note">Meu Corre · versão beta 0.4.1</p>
     </div>
   </section>
 
@@ -726,7 +727,12 @@ async function renderOferta(){if(!OF)return;$('of-card').hidden=false;let st={};
   $('of-ativar').textContent=st.ligado?'Configurações de acessibilidade':'Ativar leitura de ofertas';
   const t=[];if(st.ultima)t.push('Última oferta lida: '+st.ultima+' ('+new Date(st.ultimaEm).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+')');
   if(st.falha&&st.falhaEm>(st.ultimaEm||0))t.push('Não consegui ler a última oferta. Mande um print desta tela para o suporte.');
-  $('of-ultima').textContent=t.join(' ')}
+  const hr=ms=>new Date(ms).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  const d=['Diagnóstico: '+(st.eventos||0)+' sinais da 99'+(st.eventoEm?' (último '+hr(st.eventoEm)+' · '+(st.eventoTipo||'')+')':'')+'.'];
+  if(st.vistoEm)d.push('Último texto com R$ ('+hr(st.vistoEm)+'): '+String(st.visto||'').slice(0,400));
+  if(st.falha&&st.falhaEm)d.push('Falha ('+hr(st.falhaEm)+'): '+String(st.falha).slice(0,400));
+  if(st.erro)d.push('Erro: '+st.erro);
+  $('of-ultima').textContent=t.join(' ');$('of-diag').textContent=d.join('\n')}
 if(OF){$('of-ativar').addEventListener('click',()=>{toast('Procure "Meu Corre" e ative');OF.abrirConfiguracoes()});
   $('of-info').addEventListener('click',()=>OF.abrirInfoApp());
   $('of-testar').addEventListener('click',async()=>{syncOferta();let r={};try{r=await OF.testar()}catch(_){}
