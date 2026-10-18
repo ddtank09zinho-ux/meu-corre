@@ -157,6 +157,7 @@ img{max-width:100%}
 
   <!-- HOJE -->
   <section class="tab" id="tab-hoje">
+    <div class="install" id="up-bar" hidden><span id="up-txt">Nova versão do Meu Corre disponível</span><button type="button" id="up-btn">Atualizar</button></div>
     <div class="install" id="b-install" hidden><span id="install-txt">Instale o Meu Corre no seu celular</span><button type="button" id="install-btn">Instalar</button></div>
     <div class="card corre" id="corre-card">
       <div class="row"><h2>Corre de hoje</h2><span class="status s-ok" id="co-status" hidden><span class="live"></span>Contando</span></div>
@@ -307,7 +308,8 @@ img{max-width:100%}
       </div>
       <input type="file" id="f-import" accept=".json,application/json" hidden>
       <button type="button" class="danger" id="b-reset">Apagar todos os dados</button>
-      <p class="note">Meu Corre · versão beta 0.4.1</p>
+      <div class="btnrow" id="up-row" hidden><button type="button" id="b-update">Verificar atualização</button></div>
+      <p class="note" id="up-info">Meu Corre · versão beta 0.4.2</p>
     </div>
   </section>
 
@@ -754,6 +756,27 @@ $('f-setup').addEventListener('submit',e=>{e.preventDefault();const c=S.cfg;
   save();$('setup').hidden=true;applyLabels();fillCfg();
   if($('su-exemplo').checked){fillForm(S.dias[S.dias.length-1].data)}else fillForm(today);
   renderAll();toast('Tudo pronto. Bom corre!')});
+
+/* ---------- atualização do app (Android) ---------- */
+const BUILD=parseInt('__BUILD__',10)||0;
+const UP_API='https://api.github.com/repos/ddtank09zinho-ux/meu-corre/releases/latest';
+const UP_APK='https://github.com/ddtank09zinho-ux/meu-corre/releases/latest/download/meu-corre.apk';
+let upNova=null;
+async function checkUpdate(manual){
+  if(!NATIVE||!BUILD)return;
+  if(!manual){try{const t=+localStorage.getItem('mc-upcheck')||0;if(Date.now()-t<6*3600e3&&!upNova)return;localStorage.setItem('mc-upcheck',String(Date.now()))}catch(_){}}
+  try{const j=await (await fetch(UP_API,{cache:'no-store'})).json();const tag=String(j.tag_name||'');const m=/-(\d+)$/.exec(tag);const n=m?+m[1]:0;
+    if(n>BUILD){upNova=tag.replace(/^v/,'').replace(/-\d+$/,'');$('up-txt').textContent='Nova versão '+upNova+' disponível';$('up-bar').hidden=false;
+      $('up-info').textContent='Meu Corre · beta 0.4.2 (build '+BUILD+') · nova versão '+upNova+' disponível';if(manual)toast('Nova versão '+upNova+' disponível');}
+    else if(manual)toast('Você já está na versão mais nova');
+  }catch(_){if(manual)toast('Sem internet para verificar agora')}}
+function baixarUpdate(){toast('Baixando… quando terminar, toque no arquivo e em Atualizar');
+  try{if(OF){OF.abrirLink({url:UP_APK}).catch(()=>{location.href=UP_APK});return}}catch(_){}location.href=UP_APK}
+if(NATIVE&&BUILD){$('up-row').hidden=false;$('up-info').textContent='Meu Corre · versão beta 0.4.2 (build '+BUILD+')';
+  $('up-btn').addEventListener('click',baixarUpdate);
+  $('b-update').addEventListener('click',()=>{if(upNova)baixarUpdate();else checkUpdate(true)});
+  setTimeout(()=>checkUpdate(false),1500);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate(false)});}
 
 /* ---------- backup ---------- */
 $('b-export').addEventListener('click',()=>{
