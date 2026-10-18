@@ -9,6 +9,6 @@ if (fs.existsSync(cap)) {
   fs.copyFileSync(cap, path.join(dst, 'capacitor.js'));
   const idx = path.join(dst, 'index.html');
   const html = fs.readFileSync(idx, 'utf8').replace('<script>\n(function(){', '<script src="capacitor.js"></script>\n<script>\n(function(){');
-  fs.writeFileSync(idx, html);
+  fs.writeFileSync(idx, html.replace(/__BUILD__/g, process.env.GITHUB_RUN_NUMBER || '0'));
 }
 console.log('web copiado para www');

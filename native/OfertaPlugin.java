@@ -66,6 +66,15 @@ public class OfertaPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void abrirLink(PluginCall call) {
+        String url = call.getString("url", "");
+        Intent i = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url));
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        getContext().startActivity(i);
+        call.resolve();
+    }
+
+    @PluginMethod
     public void testar(PluginCall call) {
         JSObject r = new JSObject();
         OfertaService s = OfertaService.instance;
