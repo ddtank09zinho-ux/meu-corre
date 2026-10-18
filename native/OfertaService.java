@@ -46,13 +46,84 @@ public class OfertaService extends AccessibilityService {
 
     @Override public void onInterrupt() {}
 
+    static final String PKG = "com.app99.driver";
+    private long ultimoDiag = 0;
+
     @Override public void onAccessibilityEvent(AccessibilityEvent event) {
         if (!prefs(this).getBoolean("ativo", true)) return;
-        AccessibilityNodeInfo root = getRootInActiveWindow();
-        if (root == null) return;
-        List<String> textos = new ArrayList<>();
-        coletar(root, textos, 0);
-        analisar(textos, false);
+        try {
+            List<List<String>> telas = new ArrayList<>();
+            // 1) Notificação da 99 (oferta chegando com o app em segundo plano)
+            if (event.getEventType() == AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED) {
+                List<String> t = new ArrayList<>();
+                for (CharSequence c : event.getText()) if (c != null) t.add(c.toString());
+                android.os.Parcelable pd = event.getParcelableData();
+                if (pd instanceof android.app.Notification) {
+                    android.os.Bundle ex = ((android.app.Notification) pd).extras;
+                    for (String k : new String[]{"android.title", "android.text", "android.bigText", "android.subText"}) {
+                        CharSequence c = ex.getCharSequence(k);
+                        if (c != null) t.add(c.toString());
+                    }
+                }
+                telas.add(t);
+            }
+            // 2) Todas as janelas da 99 na tela (inclui o balão de oferta sobre outros apps)
+            try {
+                for (android.view.accessibility.AccessibilityWindowInfo w : getWindows()) {
+                    AccessibilityNodeInfo r = w.getRoot();
+                    if (r == null || r.getPackageName() == null || !PKG.contentEquals(r.getPackageName())) continue;
+                    List<String> t = new ArrayList<>();
+                    coletar(r, t, 0);
+                    telas.add(t);
+                }
+            } catch (Exception ignored) {}
+            // 3) A janela de onde veio o evento
+            AccessibilityNodeInfo src = event.getSource();
+            if (src != null) {
+                AccessibilityNodeInfo r = src;
+                for (int i = 0; i < 60; i++) { AccessibilityNodeInfo pa = r.getParent(); if (pa == null) break; r = pa; }
+                List<String> t = new ArrayList<>();
+                coletar(r, t, 0);
+                telas.add(t);
+            }
+            // 4) Janela ativa (como antes)
+            AccessibilityNodeInfo root = getRootInActiveWindow();
+            if (root != null && root.getPackageName() != null && PKG.contentEquals(root.getPackageName())) {
+                List<String> t = new ArrayList<>();
+                coletar(root, t, 0);
+                telas.add(t);
+            }
+            diagnostico(event, telas);
+            List<String> alvo = null;
+            for (List<String> t : telas) if (OfertaParser.extrair(t) != null) { alvo = t; break; }
+            if (alvo == null) for (List<String> t : telas) {
+                for (String x : t) if (x.toLowerCase(BR).contains("aceitar")) { alvo = t; break; }
+                if (alvo != null) break;
+            }
+            analisar(alvo == null ? new ArrayList<>() : alvo, false);
+        } catch (Exception e) {
+            prefs(this).edit().putString("erro", e.toString()).apply();
+        }
+    }
+
+    /** Guarda o que a leitura está vendo, para o card "Ofertas da 99" mostrar. */
+    private void diagnostico(AccessibilityEvent event, List<List<String>> telas) {
+        long agora = System.currentTimeMillis();
+        SharedPreferences p = prefs(this);
+        SharedPreferences.Editor e = p.edit();
+        boolean temValor = false;
+        StringBuilder sb = new StringBuilder();
+        for (List<String> t : telas) for (String s : t) {
+            if (s.contains("R$")) temValor = true;
+            if (sb.length() < 700) sb.append(s.replace('\n', ' ')).append(" | ");
+        }
+        if (temValor) e.putString("visto", sb.toString()).putLong("vistoEm", agora);
+        if (agora - ultimoDiag > 3000 || temValor) {
+            ultimoDiag = agora;
+            e.putInt("eventos", p.getInt("eventos", 0) + 1).putLong("eventoEm", agora)
+             .putString("eventoTipo", AccessibilityEvent.eventTypeToString(event.getEventType()) + " · " + telas.size() + " janela(s)");
+        }
+        e.apply();
     }
 
     private static void coletar(AccessibilityNodeInfo n, List<String> out, int prof) {

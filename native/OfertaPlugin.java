@@ -39,6 +39,12 @@ public class OfertaPlugin extends Plugin {
         r.put("ultimaEm", p.getLong("ultimaEm", 0));
         r.put("falha", p.getString("falha", ""));
         r.put("falhaEm", p.getLong("falhaEm", 0));
+        r.put("eventos", p.getInt("eventos", 0));
+        r.put("eventoEm", p.getLong("eventoEm", 0));
+        r.put("eventoTipo", p.getString("eventoTipo", ""));
+        r.put("visto", p.getString("visto", ""));
+        r.put("vistoEm", p.getLong("vistoEm", 0));
+        r.put("erro", p.getString("erro", ""));
         call.resolve(r);
     }
 
