@@ -204,6 +204,12 @@ img{max-width:100%}
         <button type="button" id="of-info" style="margin-top:8px">Abrir informações do app</button>
       </details>
       <p class="note" id="of-ultima"></p>
+      <p class="note" id="of-alerta" style="color:var(--bad)" hidden></p>
+      <div class="btnrow">
+        <button type="button" id="of-gravar">Gravar diagnóstico</button>
+        <button type="button" id="of-enviar" hidden>Enviar diagnóstico</button>
+      </div>
+      <p class="note" id="of-grav"></p>
       <p class="note" id="of-diag" style="white-space:pre-wrap;word-break:break-word;font-size:11px;opacity:.75"></p>
     </div>
 
@@ -309,7 +315,7 @@ img{max-width:100%}
       <input type="file" id="f-import" accept=".json,application/json" hidden>
       <button type="button" class="danger" id="b-reset">Apagar todos os dados</button>
       <div class="btnrow" id="up-row" hidden><button type="button" id="b-update">Verificar atualização</button></div>
-      <p class="note" id="up-info">Meu Corre · versão beta 0.4.2</p>
+      <p class="note" id="up-info">Meu Corre · versão beta 0.4.3</p>
     </div>
   </section>
 
@@ -734,11 +740,24 @@ async function renderOferta(){if(!OF)return;$('of-card').hidden=false;let st={};
   if(st.vistoEm)d.push('Último texto com R$ ('+hr(st.vistoEm)+'): '+String(st.visto||'').slice(0,400));
   if(st.falha&&st.falhaEm)d.push('Falha ('+hr(st.falhaEm)+'): '+String(st.falha).slice(0,400));
   if(st.erro)d.push('Erro: '+st.erro);
+  d.unshift('Leitura '+(st.ligado?'ativada':'desativada')+' · '+(st.rodando?'rodando':'parada'));
+  const al=$('of-alerta');al.hidden=!(st.ligado&&st.rodando===false);
+  al.textContent='A leitura está ativada, mas o Android parou o serviço. Desative e ative de novo o Meu Corre em Acessibilidade e deixe a bateria do Meu Corre como "Sem restrições".';
+  const grav=(st.gravarAte||0)>Date.now();
+  $('of-gravar').textContent=grav?'Parar gravação':'Gravar diagnóstico';
+  $('of-enviar').hidden=grav;
+  $('of-grav').textContent=grav?'Gravando até '+new Date(st.gravarAte).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'. Use a 99 normalmente e espere chegar pelo menos uma oferta. Depois volte aqui e toque em Enviar diagnóstico. ('+Math.round((st.gravado||0)/1024)+' KB gravados)'
+    :(st.gravado>0?'Gravação pronta ('+Math.round(st.gravado/1024)+' KB). Toque em Enviar diagnóstico e mande pelo WhatsApp.':'Se o balão não aparecer nas ofertas, toque em Gravar diagnóstico, receba algumas ofertas na 99 e depois envie o resultado.');
   $('of-ultima').textContent=t.join(' ');$('of-diag').textContent=d.join('\n')}
 if(OF){$('of-ativar').addEventListener('click',()=>{toast('Procure "Meu Corre" e ative');OF.abrirConfiguracoes()});
   $('of-info').addEventListener('click',()=>OF.abrirInfoApp());
   $('of-testar').addEventListener('click',async()=>{syncOferta();let r={};try{r=await OF.testar()}catch(_){}
     toast(r.ok?'Balão de teste exibido no topo da tela':'Ative a leitura de ofertas primeiro')});
+  $('of-gravar').addEventListener('click',async()=>{let st={};try{st=await OF.status()}catch(_){}
+    const grav=(st.gravarAte||0)>Date.now();
+    try{await OF.gravar({minutos:grav?0:20})}catch(_){}
+    toast(grav?'Gravação encerrada':'Gravando por 20 minutos. Agora abra a 99 e trabalhe normalmente');renderOferta()});
+  $('of-enviar').addEventListener('click',async()=>{try{await OF.gravar({minutos:0});await OF.enviarDiagnostico()}catch(_){toast('Não consegui abrir o envio')}renderOferta()});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)renderOferta()});
   syncOferta();renderOferta()}
 
@@ -767,12 +786,12 @@ async function checkUpdate(manual){
   if(!manual){try{const t=+localStorage.getItem('mc-upcheck')||0;if(Date.now()-t<6*3600e3&&!upNova)return;localStorage.setItem('mc-upcheck',String(Date.now()))}catch(_){}}
   try{const j=await (await fetch(UP_API,{cache:'no-store'})).json();const tag=String(j.tag_name||'');const m=/-(\d+)$/.exec(tag);const n=m?+m[1]:0;
     if(n>BUILD){upNova=tag.replace(/^v/,'').replace(/-\d+$/,'');$('up-txt').textContent='Nova versão '+upNova+' disponível';$('up-bar').hidden=false;
-      $('up-info').textContent='Meu Corre · beta 0.4.2 (build '+BUILD+') · nova versão '+upNova+' disponível';if(manual)toast('Nova versão '+upNova+' disponível');}
+      $('up-info').textContent='Meu Corre · beta 0.4.3 (build '+BUILD+') · nova versão '+upNova+' disponível';if(manual)toast('Nova versão '+upNova+' disponível');}
     else if(manual)toast('Você já está na versão mais nova');
   }catch(_){if(manual)toast('Sem internet para verificar agora')}}
 function baixarUpdate(){toast('Baixando… quando terminar, toque no arquivo e em Atualizar');
   try{if(OF){OF.abrirLink({url:UP_APK}).catch(()=>{location.href=UP_APK});return}}catch(_){}location.href=UP_APK}
-if(NATIVE&&BUILD){$('up-row').hidden=false;$('up-info').textContent='Meu Corre · versão beta 0.4.2 (build '+BUILD+')';
+if(NATIVE&&BUILD){$('up-row').hidden=false;$('up-info').textContent='Meu Corre · versão beta 0.4.3 (build '+BUILD+')';
   $('up-btn').addEventListener('click',baixarUpdate);
   $('b-update').addEventListener('click',()=>{if(upNova)baixarUpdate();else checkUpdate(true)});
   setTimeout(()=>checkUpdate(false),1500);
