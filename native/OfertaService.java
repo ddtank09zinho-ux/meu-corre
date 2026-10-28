@@ -36,6 +36,7 @@ public class OfertaService extends AccessibilityService {
     @Override protected void onServiceConnected() {
         instance = this;
         wm = (WindowManager) getSystemService(WINDOW_SERVICE);
+        prefs(this).edit().putLong("conectadoEm", System.currentTimeMillis()).apply();
     }
 
     @Override public boolean onUnbind(Intent intent) {
@@ -94,6 +95,7 @@ public class OfertaService extends AccessibilityService {
                 telas.add(t);
             }
             diagnostico(event, telas);
+            gravar(event);
             List<String> alvo = null;
             for (List<String> t : telas) if (OfertaParser.extrair(t) != null) { alvo = t; break; }
             if (alvo == null) for (List<String> t : telas) {
@@ -124,6 +126,67 @@ public class OfertaService extends AccessibilityService {
              .putString("eventoTipo", AccessibilityEvent.eventTypeToString(event.getEventType()) + " · " + telas.size() + " janela(s)");
         }
         e.apply();
+    }
+
+    // ---------- Gravação de diagnóstico (só quando o usuário liga, por alguns minutos) ----------
+    static final String ARQ = "diagnostico.txt";
+    private String ultimoDump = "";
+
+    private void gravar(AccessibilityEvent event) {
+        SharedPreferences p = prefs(this);
+        if (System.currentTimeMillis() > p.getLong("gravarAte", 0)) return;
+        StringBuilder sb = new StringBuilder();
+        CharSequence evPkg = event.getPackageName();
+        sb.append("evento ").append(AccessibilityEvent.eventTypeToString(event.getEventType()))
+          .append(" de ").append(evPkg).append('\n');
+        if (event.getEventType() == AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED) {
+            sb.append("  notificação: ").append(event.getText()).append('\n');
+        }
+        try {
+            for (android.view.accessibility.AccessibilityWindowInfo w : getWindows()) {
+                AccessibilityNodeInfo r = w.getRoot();
+                CharSequence pkg = r == null ? null : r.getPackageName();
+                sb.append("  janela tipo=").append(w.getType()).append(" camada=").append(w.getLayer())
+                  .append(" ativa=").append(w.isActive()).append(" app=").append(pkg);
+                if (r == null || pkg == null || !PKG.contentEquals(pkg)) { sb.append('\n'); continue; }
+                int[] cont = new int[2];
+                java.util.Map<String, Integer> classes = new java.util.TreeMap<>();
+                List<String> linhas = new ArrayList<>();
+                despejar(r, 0, cont, classes, linhas);
+                sb.append(" nós=").append(cont[0]).append(" comTexto=").append(cont[1]).append(" classes=").append(classes).append('\n');
+                for (String l : linhas) sb.append("    ").append(l).append('\n');
+            }
+        } catch (Exception e) { sb.append("  erro janelas: ").append(e).append('\n'); }
+        String dump = sb.toString();
+        if (dump.equals(ultimoDump)) return;
+        ultimoDump = dump;
+        try {
+            java.io.File f = new java.io.File(getFilesDir(), ARQ);
+            if (f.length() > 3_000_000) return;
+            String hora = new java.text.SimpleDateFormat("HH:mm:ss", BR).format(new java.util.Date());
+            try (java.io.FileOutputStream o = new java.io.FileOutputStream(f, true)) {
+                o.write(("=== " + hora + " " + dump).getBytes("UTF-8"));
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private static void despejar(AccessibilityNodeInfo n, int prof, int[] cont, java.util.Map<String, Integer> classes, List<String> out) {
+        if (n == null || prof > 40) return;
+        cont[0]++;
+        CharSequence cls = n.getClassName();
+        String c = cls == null ? "?" : cls.toString().substring(cls.toString().lastIndexOf('.') + 1);
+        Integer q = classes.get(c);
+        classes.put(c, q == null ? 1 : q + 1);
+        CharSequence t = n.getText(), d = n.getContentDescription();
+        String id = n.getViewIdResourceName();
+        if ((t != null && t.length() > 0) || (d != null && d.length() > 0)) {
+            cont[1]++;
+            if (out.size() < 150) out.add(c + (id != null ? " #" + id.substring(id.indexOf('/') + 1) : "")
+                    + (t != null && t.length() > 0 ? " texto=\"" + t.toString().replace('\n', ' ') + "\"" : "")
+                    + (d != null && d.length() > 0 ? " desc=\"" + d.toString().replace('\n', ' ') + "\"" : "")
+                    + (n.isClickable() ? " [clicável]" : ""));
+        }
+        for (int i = 0; i < n.getChildCount(); i++) despejar(n.getChild(i), prof + 1, cont, classes, out);
     }
 
     private static void coletar(AccessibilityNodeInfo n, List<String> out, int prof) {
