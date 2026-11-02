@@ -63,6 +63,12 @@ if os.path.isdir(RES):
     for f in ['UtilPlugin.java', 'MainActivity.java']:
         shutil.copy(os.path.join(NAT, f), os.path.join(JAVA, f))
 
+    # Backup automático do Android (Google Drive) ligado
+    p = os.path.join(ROOT, 'android/app/src/main/AndroidManifest.xml'); s = open(p).read()
+    if 'android:allowBackup="false"' in s: s = s.replace('android:allowBackup="false"', 'android:allowBackup="true"')
+    elif 'android:allowBackup' not in s: s = s.replace('<application', '<application android:allowBackup="true"', 1)
+    open(p, 'w').write(s)
+
     # Versão e assinatura
     pkg = json.load(open(os.path.join(ROOT, 'package.json')))
     ver = pkg['version']; maj, mi, pa = [int(x) for x in ver.split('.')]
@@ -76,8 +82,8 @@ if os.path.isdir(RES):
             '            if (System.getenv("KEYSTORE_PASSWORD")) {\n'
             '                storeFile file("release.jks")\n'
             '                storePassword System.getenv("KEYSTORE_PASSWORD")\n'
-            '                keyAlias "meucorre"\n'
-            '                keyPassword System.getenv("KEYSTORE_PASSWORD")\n'
+            '                keyAlias(System.getenv("KEY_ALIAS") ?: "meucorre")\n'
+            '                keyPassword(System.getenv("KEY_PASSWORD") ?: System.getenv("KEYSTORE_PASSWORD"))\n'
             '            }\n        }\n    }\n'
             '    buildTypes {\n        release {\n'
             '            if (System.getenv("KEYSTORE_PASSWORD")) { signingConfig signingConfigs.release }\n', 1)
