@@ -161,6 +161,10 @@ img{max-width:100%}
     <div class="install" id="b-install" hidden><span id="install-txt">Instale o Meu Corre no seu celular</span><button type="button" id="install-btn">Instalar</button></div>
     <div class="card corre" id="corre-card">
       <div class="row"><h2>Corre de hoje</h2><span class="status s-ok" id="co-status" hidden><span class="live"></span>Contando</span></div>
+      <div id="co-bat" hidden style="border:1px solid var(--warn);border-radius:12px;padding:10px 12px;margin:8px 0;display:flex;flex-direction:column;gap:8px">
+        <p class="note" id="co-bat-txt" style="color:var(--fg);margin:0"></p>
+        <button type="button" id="co-bat-btn"></button>
+      </div>
       <div id="co-off" style="display:flex;flex-direction:column;gap:10px">
         <p class="note" id="co-desc"></p>
         <label class="f" id="co-odo-ini-l">Km no painel agora (hodômetro)<input id="co-odo-ini" inputmode="numeric" placeholder="Ex.: 23450"></label>
@@ -293,7 +297,7 @@ img{max-width:100%}
       <input type="file" id="f-import" accept=".json,application/json" hidden>
       <button type="button" class="danger" id="b-reset">Apagar todos os dados</button>
       <div class="btnrow" id="up-row" hidden><button type="button" id="b-update">Verificar atualização</button></div>
-      <p class="note" id="up-info">Meu Corre · versão 0.9.0</p>
+      <p class="note" id="up-info">Meu Corre · versão 0.9.1</p>
     </div>
   </section>
 
@@ -688,11 +692,27 @@ function renderCorre(){
     $('co-hint').textContent=gps?'Pode apagar a tela e usar os outros apps. Uma notificação mostra que o Meu Corre está contando.':(c.odoIni?`Começou com ${fmt(c.odoIni)} km no painel.`:'Sem km inicial: no fim, digite os km do dia no registro.');}
   clearInterval(coTick);if(on)coTick=setInterval(()=>{$('co-tempo').textContent=fmtTempo(Date.now()-S.corre.inicio)},15000);
 }
+/* ---------- ponte com o Android ---------- */
+const UT=NATIVE?window.Capacitor.registerPlugin('Util'):null;
+
+/* Economia de bateria: o Android pausa o GPS com a tela apagada; o app avisa e leva à configuração */
+let batAcao=null;
+async function checkBateria(){
+  if(!UT)return null;let b={};try{b=await UT.bateria()}catch(_){return null}
+  const box=$('co-bat'),xi=/xiaomi|redmi|poco/.test(b.fabricante||'');
+  if(b.economia){$('co-bat-txt').innerHTML='<b>Modo economia de bateria ligado.</b> Com ele, o Android pausa o GPS e o km não é contado. Desligue antes de rodar.';
+    $('co-bat-btn').textContent='Desligar economia de bateria';batAcao=()=>UT.abrirEconomia();box.hidden=false}
+  else if(b.otimizado){$('co-bat-txt').innerHTML='<b>Libere a bateria do Meu Corre</b> para o km ser contado com a tela apagada: em <b>Bateria</b>, escolha <b>Sem restrições</b>'+(xi?' e ative o <b>Início automático</b>.':'.');
+    $('co-bat-btn').textContent='Abrir configurações do app';batAcao=()=>UT.abrirOtimizacao();box.hidden=false}
+  else{box.hidden=true;batAcao=null}
+  return b}
+$('co-bat-btn').addEventListener('click',()=>{if(batAcao)batAcao().catch(()=>{})});
 $('co-start').addEventListener('click',async()=>{
+  const bat=await checkBateria();
   S.corre={ativo:true,inicio:Date.now(),m:0,last:null,modo:NATIVE?'gps':'odo',odoIni:NATIVE?0:numIn($('co-odo-ini').value)};
   save();renderCorre();
   if(NATIVE&&!(await startWatcher())){S.corre=null;save();renderCorre();return}
-  toast('Corre iniciado. Bom trabalho!')});
+  toast(bat&&bat.economia?'Corre iniciado, mas desligue a economia de bateria: com ela o km não é contado':'Corre iniciado. Bom trabalho!')});
 $('co-stop').addEventListener('click',e=>{const b=e.currentTarget,c=S.corre;if(!c)return;
   if(!b.dataset.confirm){b.dataset.confirm='1';b.textContent='Toque de novo para encerrar';setTimeout(()=>{delete b.dataset.confirm;b.textContent='Encerrar corre'},4000);return}
   delete b.dataset.confirm;b.textContent='Encerrar corre';
@@ -711,10 +731,8 @@ $('co-stop').addEventListener('click',e=>{const b=e.currentTarget,c=S.corre;if(!
   setTimeout(()=>{$('f-dia').scrollIntoView({behavior:'smooth'});const f=document.querySelector('#d-plats input');if(f)f.focus()},400)});
 renderCorre();
 if(S.corre&&S.corre.ativo&&S.corre.modo==='gps'&&NATIVE){startWatcher()}
-if(NATIVE)document.addEventListener('visibilitychange',()=>{if(!document.hidden)renderCorre()});
-
-/* ---------- ponte com o Android ---------- */
-const UT=NATIVE?window.Capacitor.registerPlugin('Util'):null;
+if(NATIVE)document.addEventListener('visibilitychange',()=>{if(!document.hidden){renderCorre();checkBateria()}});
+checkBateria();
 
 /* ---------- primeira vez ---------- */
 if(novo) $('setup').hidden=false;
@@ -734,7 +752,7 @@ $('f-setup').addEventListener('submit',e=>{e.preventDefault();const c=S.cfg;
 /* ---------- atualização do app (Android) ---------- */
 const BUILD=parseInt('__BUILD__',10)||0;
 const LOJA='__LOJA__'==='1'; /* versão da Play Store: a loja cuida das atualizações */
-const VER='0.9.0';
+const VER='0.9.1';
 const UP_API='https://api.github.com/repos/ddtank09zinho-ux/meu-corre/releases/latest';
 const UP_APK='https://github.com/ddtank09zinho-ux/meu-corre/releases/latest/download/meu-corre.apk';
 let upNova=null;
