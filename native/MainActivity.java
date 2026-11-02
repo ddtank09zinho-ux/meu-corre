@@ -7,7 +7,7 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        registerPlugin(OfertaPlugin.class);
+        registerPlugin(UtilPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }
