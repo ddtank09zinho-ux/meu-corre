@@ -1,4 +1,4 @@
-name: Gerar APK
+name: Gerar app
 
 on:
   push:
@@ -77,3 +77,28 @@ jobs:
             Baixe o arquivo **meu-corre.apk** abaixo no celular Android e instale.
           files: meu-corre.apk
           make_latest: true
+
+      - name: Versão da Play Store (.aab)
+        env:
+          CHAVE_B64: ${{ secrets.MEUCORRE_CHAVE }}
+          KEYSTORE_PASSWORD: ${{ secrets.MEUCORRE_SENHA }}
+        run: |
+          if [ -z "$CHAVE_B64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "Chave da Play Store ainda não cadastrada: o arquivo .aab não foi gerado."
+            exit 0
+          fi
+          LOJA=1 node scripts/copy-web.js
+          npx cap copy android
+          printf '%s' "$CHAVE_B64" | tr -d ' \r\n' | base64 -d > android/app/release.jks
+          export KEY_ALIAS=$(keytool -list -keystore android/app/release.jks -storepass "$KEYSTORE_PASSWORD" | grep -i PrivateKeyEntry | head -1 | cut -d, -f1)
+          echo "Chave da loja: alias $KEY_ALIAS"
+          cd android
+          ./gradlew bundleRelease --no-daemon
+          cp app/build/outputs/bundle/release/app-release.aab ../meu-corre-loja.aab
+          echo "AAB=1" >> $GITHUB_ENV
+
+      - uses: actions/upload-artifact@v4
+        if: env.AAB == '1'
+        with:
+          name: meu-corre-play-store
+          path: meu-corre-loja.aab
