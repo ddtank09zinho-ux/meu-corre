@@ -152,7 +152,7 @@ img{max-width:100%}
       <div class="logo" aria-hidden="true"><span>MC</span></div>
       <div><h1>Meu Corre</h1><small id="hoje-str"></small></div>
     </div>
-    <span class="chip">Beta 0.4</span>
+    <span class="chip">v0.9</span>
   </header>
 
   <!-- HOJE -->
@@ -293,7 +293,7 @@ img{max-width:100%}
       <input type="file" id="f-import" accept=".json,application/json" hidden>
       <button type="button" class="danger" id="b-reset">Apagar todos os dados</button>
       <div class="btnrow" id="up-row" hidden><button type="button" id="b-update">Verificar atualização</button></div>
-      <p class="note" id="up-info">Meu Corre · versão beta 0.5.0</p>
+      <p class="note" id="up-info">Meu Corre · versão 0.9.0</p>
     </div>
   </section>
 
@@ -441,7 +441,15 @@ try{S=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){S=null}
 const novo=!S||!S.cfg;
 if(novo){S={cfg:JSON.parse(JSON.stringify(DEF)),dias:[],manut:[]}}
 if(!S.cfg.veiculo)S.cfg.veiculo='moto';
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+/* Cópia de segurança no armazenamento do Android (não some se o sistema limpar o navegador interno;
+   entra no backup automático do Google) */
+function PREF(){try{const C=window.Capacitor;if(C&&C.registerPlugin&&C.isNativePlatform&&C.isNativePlatform())return window.__pref||(window.__pref=C.registerPlugin('Preferences'))}catch(_){}return null}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+  try{const p=PREF();if(p)p.set({key:KEY,value:JSON.stringify(S)}).catch(()=>{})}catch(_){}}
+try{const p=PREF();if(p){
+  if(novo)p.get({key:KEY}).then(r=>{try{const d=r&&r.value&&JSON.parse(r.value);if(d&&d.cfg){localStorage.setItem(KEY,r.value);location.reload()}}catch(_){}}).catch(()=>{});
+  else p.set({key:KEY,value:JSON.stringify(S)}).catch(()=>{});
+}}catch(_){}
 
 const $=id=>document.getElementById(id);
 const num=v=>{if(v==null)return 0;const n=parseFloat(String(v).replace(/\./g,'').replace(',','.'));return isFinite(n)?n:0};
@@ -725,20 +733,23 @@ $('f-setup').addEventListener('submit',e=>{e.preventDefault();const c=S.cfg;
 
 /* ---------- atualização do app (Android) ---------- */
 const BUILD=parseInt('__BUILD__',10)||0;
+const LOJA='__LOJA__'==='1'; /* versão da Play Store: a loja cuida das atualizações */
+const VER='0.9.0';
 const UP_API='https://api.github.com/repos/ddtank09zinho-ux/meu-corre/releases/latest';
 const UP_APK='https://github.com/ddtank09zinho-ux/meu-corre/releases/latest/download/meu-corre.apk';
 let upNova=null;
 async function checkUpdate(manual){
-  if(!NATIVE||!BUILD)return;
+  if(!NATIVE||!BUILD||LOJA)return;
   if(!manual){try{const t=+localStorage.getItem('mc-upcheck')||0;if(Date.now()-t<6*3600e3&&!upNova)return;localStorage.setItem('mc-upcheck',String(Date.now()))}catch(_){}}
   try{const j=await (await fetch(UP_API,{cache:'no-store'})).json();const tag=String(j.tag_name||'');const m=/-(\d+)$/.exec(tag);const n=m?+m[1]:0;
     if(n>BUILD){upNova=tag.replace(/^v/,'').replace(/-\d+$/,'');$('up-txt').textContent='Nova versão '+upNova+' disponível';$('up-bar').hidden=false;
-      $('up-info').textContent='Meu Corre · beta 0.5.0 (build '+BUILD+') · nova versão '+upNova+' disponível';if(manual)toast('Nova versão '+upNova+' disponível');}
+      $('up-info').textContent='Meu Corre · versão '+VER+' (build '+BUILD+') · nova versão '+upNova+' disponível';if(manual)toast('Nova versão '+upNova+' disponível');}
     else if(manual)toast('Você já está na versão mais nova');
   }catch(_){if(manual)toast('Sem internet para verificar agora')}}
 function baixarUpdate(){toast('Baixando… quando terminar, toque no arquivo e em Atualizar');
   try{if(UT){UT.abrirLink({url:UP_APK}).catch(()=>{location.href=UP_APK});return}}catch(_){}location.href=UP_APK}
-if(NATIVE&&BUILD){$('up-row').hidden=false;$('up-info').textContent='Meu Corre · versão beta 0.5.0 (build '+BUILD+')';
+if(NATIVE&&BUILD)$('up-info').textContent='Meu Corre · versão '+VER+' (build '+BUILD+')';
+if(NATIVE&&BUILD&&!LOJA){$('up-row').hidden=false;
   $('up-btn').addEventListener('click',baixarUpdate);
   $('b-update').addEventListener('click',()=>{if(upNova)baixarUpdate();else checkUpdate(true)});
   setTimeout(()=>checkUpdate(false),1500);
@@ -757,7 +768,8 @@ $('f-import').addEventListener('change',e=>{const f=e.target.files[0];if(!f)retu
     if(!S.cfg.veiculo)S.cfg.veiculo='moto';save();applyLabels();fillCfg();fillForm(today);renderAll();toast(`Backup restaurado: ${S.dias.length} dias`)}
   catch(err){toast('Este arquivo não é um backup do Meu Corre')}};r.readAsText(f);e.target.value=''});
 $('b-reset').addEventListener('click',e=>{const b=e.currentTarget;
-  if(b.dataset.confirm){try{localStorage.removeItem(KEY)}catch(_){ }location.reload()}
+  if(b.dataset.confirm){try{localStorage.removeItem(KEY)}catch(_){ }
+    const p=PREF();Promise.resolve(p&&p.remove({key:KEY})).catch(()=>{}).then(()=>location.reload())}
   else{b.dataset.confirm='1';b.textContent='Toque de novo para apagar tudo';setTimeout(()=>{delete b.dataset.confirm;b.textContent='Apagar todos os dados'},4000)}});
 
 /* ---------- instalar ---------- */
