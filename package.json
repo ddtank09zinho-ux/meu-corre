@@ -1,12 +1,13 @@
 {
   "name": "meu-corre",
-  "version": "0.5.0",
+  "version": "0.9.0",
   "private": true,
   "description": "Meu Corre - lucro real de quem trabalha com aplicativo",
   "dependencies": {
     "@capacitor/android": "8.5.2",
     "@capacitor/core": "8.5.2",
     "@capacitor/local-notifications": "8.0.2",
+    "@capacitor/preferences": "8.0.1",
     "@capacitor-community/background-geolocation": "1.2.26"
   },
   "devDependencies": {
