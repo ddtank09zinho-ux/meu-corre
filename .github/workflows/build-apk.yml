@@ -89,8 +89,38 @@ jobs:
           fi
           LOJA=1 node scripts/copy-web.js
           npx cap copy android
-          printf '%s' "$CHAVE_B64" | tr -d ' \r\n' | base64 -d > android/app/release.jks
-          export KEY_ALIAS=$(keytool -list -keystore android/app/release.jks -storepass "$KEYSTORE_PASSWORD" | grep -i PrivateKeyEntry | head -1 | cut -d, -f1)
+          # Lê a chave e a senha tolerando espaços, quebras de linha e texto colado junto (nada é exibido)
+          python3 - <<'PY'
+          import os, re, base64, hashlib
+          txt = os.environ['CHAVE_B64']
+          # junta as linhas seguidas que só têm caracteres de base64 e fica com o maior bloco
+          blocos, atual = [], []
+          for linha in txt.replace('\r', '').split('\n'):
+              l = linha.strip()
+              if len(l) >= 16 and re.fullmatch(r'[A-Za-z0-9+/=]+', l):
+                  atual.append(l)
+              elif atual:
+                  blocos.append(''.join(atual)); atual = []
+          if atual: blocos.append(''.join(atual))
+          b64 = max(blocos, key=len) if blocos else ''
+          try:
+              dados = base64.b64decode(b64 + '=' * (-len(b64) % 4))
+          except Exception as e:
+              dados = b''
+              print('Chave: o texto colado em MEUCORRE_CHAVE não é uma chave válida.')
+          open('android/app/release.jks', 'wb').write(dados)
+          print(f'Chave: {len(dados)} bytes, impressão digital {hashlib.sha256(dados).hexdigest()[:12]}')
+          senha = os.environ['KEYSTORE_PASSWORD'].strip()
+          print(f'Senha: {len(senha)} caracteres (espaços e quebras de linha das pontas removidos)')
+          PY
+          export KEYSTORE_PASSWORD="$(printf '%s' "$KEYSTORE_PASSWORD" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+          if keytool -list -keystore android/app/release.jks -storepass "$KEYSTORE_PASSWORD" > /tmp/kl.txt 2>&1; then
+            echo "Senha da chave: confere"
+          else
+            echo "Senha da chave: NÃO confere com a chave ($(head -1 /tmp/kl.txt | cut -c1-80))"
+            exit 1
+          fi
+          export KEY_ALIAS=$(grep -i PrivateKeyEntry /tmp/kl.txt | head -1 | cut -d, -f1)
           echo "Chave da loja: alias $KEY_ALIAS"
           cd android
           ./gradlew bundleRelease --no-daemon
