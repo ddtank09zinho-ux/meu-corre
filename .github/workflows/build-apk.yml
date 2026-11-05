@@ -72,7 +72,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION }}-${{ github.run_number }}
-          name: Meu Corre ${{ env.VERSION }} (build ${{ github.run_number }})
+          name: Sobra Real ${{ env.VERSION }} (build ${{ github.run_number }})
           body: |
             Baixe o arquivo **meu-corre.apk** abaixo no celular Android e instale.
           files: meu-corre.apk
