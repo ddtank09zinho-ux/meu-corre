@@ -1,4 +1,4 @@
-# Meu Corre
+# Sobra Real
 
 App para quem trabalha com aplicativo (moto, carro ou bicicleta): mostra o lucro real do dia,
 conta os km pelo GPS em segundo plano, controla a manutenção do veículo e o MEI.

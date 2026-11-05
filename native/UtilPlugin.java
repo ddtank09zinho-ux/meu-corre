@@ -1,4 +1,4 @@
-package br.app.meucorre;
+package br.app.sobrareal;
 
 import android.content.Context;
 import android.content.Intent;

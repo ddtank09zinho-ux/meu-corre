@@ -17,8 +17,8 @@ def font(px):
 def diamond(im, cx, cy, s):
     d = ImageDraw.Draw(im)
     d.polygon([(cx, cy - s), (cx + s, cy), (cx, cy + s), (cx - s, cy)], fill=YEL)
-    f = font(max(8, int(s * 0.62))); bb = d.textbbox((0, 0), 'MC', font=f)
-    d.text((cx - (bb[2] - bb[0]) / 2 - bb[0], cy - (bb[3] - bb[1]) / 2 - bb[1]), 'MC', fill=INK, font=f)
+    f = font(max(8, int(s * 0.62))); bb = d.textbbox((0, 0), 'SR', font=f)
+    d.text((cx - (bb[2] - bb[0]) / 2 - bb[0], cy - (bb[3] - bb[1]) / 2 - bb[1]), 'SR', fill=INK, font=f)
 
 def icon(size, rnd=False):
     im = Image.new('RGBA', (size, size), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
@@ -58,7 +58,7 @@ if os.path.isdir(RES):
     # Plugin nativo (abrir link de atualização)
     import shutil
     NAT = os.path.join(ROOT, 'native')
-    JAVA = os.path.join(ROOT, 'android/app/src/main/java/br/app/meucorre')
+    JAVA = os.path.join(ROOT, 'android/app/src/main/java/br/app/sobrareal')
     os.makedirs(JAVA, exist_ok=True)
     for f in ['UtilPlugin.java', 'MainActivity.java']:
         shutil.copy(os.path.join(NAT, f), os.path.join(JAVA, f))
