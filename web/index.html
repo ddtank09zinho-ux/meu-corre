@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Meu Corre</title>
+<title>Sobra Real</title>
 <meta name="description" content="Lucro real de quem trabalha com aplicativo: moto, carro ou bicicleta. Ganhos, custos do veículo, meta do dia e MEI.">
 <meta name="theme-color" content="#111418">
 <link rel="manifest" href="manifest.webmanifest">
@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Meu Corre">
+<meta name="apple-mobile-web-app-title" content="Sobra Real">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -154,16 +154,16 @@ img{max-width:100%}
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <div class="logo" aria-hidden="true"><span>MC</span></div>
-      <div><h1>Meu Corre</h1><small id="hoje-str"></small></div>
+      <div class="logo" aria-hidden="true"><span>SR</span></div>
+      <div><h1>Sobra Real</h1><small id="hoje-str"></small></div>
     </div>
     <span class="chip">v0.9</span>
   </header>
 
   <!-- HOJE -->
   <section class="tab" id="tab-hoje">
-    <div class="install" id="up-bar" hidden><span id="up-txt">Nova versão do Meu Corre disponível</span><button type="button" id="up-btn">Atualizar</button></div>
-    <div class="install" id="b-install" hidden><span id="install-txt">Instale o Meu Corre no seu celular</span><button type="button" id="install-btn">Instalar</button></div>
+    <div class="install" id="up-bar" hidden><span id="up-txt">Nova versão do Sobra Real disponível</span><button type="button" id="up-btn">Atualizar</button></div>
+    <div class="install" id="b-install" hidden><span id="install-txt">Instale o Sobra Real no seu celular</span><button type="button" id="install-btn">Instalar</button></div>
     <div class="card corre" id="corre-card">
       <div class="row"><h2>Corre de hoje</h2><span class="status s-ok" id="co-status" hidden><span class="live"></span>Contando</span></div>
       <div id="co-bat" hidden style="border:1px solid var(--warn);border-radius:12px;padding:10px 12px;margin:8px 0;display:flex;flex-direction:column;gap:8px">
@@ -305,7 +305,7 @@ img{max-width:100%}
       <input type="file" id="f-import" accept=".json,application/json" hidden>
       <button type="button" class="danger" id="b-reset">Apagar todos os dados</button>
       <div class="btnrow" id="up-row" hidden><button type="button" id="b-update">Verificar atualização</button></div>
-      <p class="note" id="up-info">Meu Corre · versão 0.9.3</p>
+      <p class="note" id="up-info">Sobra Real · versão 0.9.4</p>
     </div>
   </section>
 
@@ -381,7 +381,7 @@ img{max-width:100%}
 
 <div class="sheet-bg" id="setup" hidden>
   <form class="sheet" id="f-setup" autocomplete="off">
-    <div class="brand"><div class="logo" aria-hidden="true"><span>MC</span></div><h1>Meu Corre</h1></div>
+    <div class="brand"><div class="logo" aria-hidden="true"><span>SR</span></div><h1>Sobra Real</h1></div>
     <h2>Quanto sobra de verdade no seu corre?</h2>
     <p class="note" style="color:var(--fg)">Conte como você trabalha e o app faz as contas: combustível, desgaste, manutenção e MEI.</p>
     <p class="qlbl">O que você faz?</p>
@@ -701,7 +701,7 @@ async function startWatcher(){
   if(!BG)return true;
   try{const LN=window.Capacitor.registerPlugin('LocalNotifications');const st=await LN.checkPermissions();if(st.display!=='granted')await LN.requestPermissions()}catch(_){}
   try{
-    watcherId=await BG.addWatcher({backgroundTitle:'Meu Corre está contando seus km',
+    watcherId=await BG.addWatcher({backgroundTitle:'Sobra Real está contando seus km',
       backgroundMessage:'Encerre o corre no app quando terminar.',requestPermissions:true,stale:false,distanceFilter:10},
       (loc,err)=>{if(err){if(err.code==='NOT_AUTHORIZED'){toast('Permita a localização para contar os km');try{BG.openSettings()}catch(_){}}return}onFix(loc)});
     return true;
@@ -717,7 +717,7 @@ function renderCorre(){
   if(on){$('co-tempo').textContent=fmtTempo(Date.now()-c.inicio);
     $('co-km-l').textContent=gps?'Km pelo GPS':'Km';$('co-km').textContent=gps?fmt(c.m/1000,1)+' km':'no fim';
     $('co-odo-fim-l').hidden=gps;
-    $('co-hint').textContent=gps?'Pode apagar a tela e usar os outros apps. Uma notificação mostra que o Meu Corre está contando.':(c.odoIni?`Começou com ${fmt(c.odoIni)} km no painel.`:'Sem km inicial: no fim, digite os km do dia no registro.');}
+    $('co-hint').textContent=gps?'Pode apagar a tela e usar os outros apps. Uma notificação mostra que o Sobra Real está contando.':(c.odoIni?`Começou com ${fmt(c.odoIni)} km no painel.`:'Sem km inicial: no fim, digite os km do dia no registro.');}
   clearInterval(coTick);if(on)coTick=setInterval(()=>{$('co-tempo').textContent=fmtTempo(Date.now()-S.corre.inicio)},15000);
 }
 /* ---------- ponte com o Android ---------- */
@@ -730,7 +730,7 @@ async function checkBateria(){
   const box=$('co-bat'),xi=/xiaomi|redmi|poco/.test(b.fabricante||'');
   if(b.economia){$('co-bat-txt').innerHTML='<b>Modo economia de bateria ligado.</b> Com ele, o Android pausa o GPS e o km não é contado. Desligue antes de rodar.';
     $('co-bat-btn').textContent='Desligar economia de bateria';batAcao=()=>UT.abrirEconomia();box.hidden=false}
-  else if(b.otimizado&&!S.cfg.batOk){$('co-bat-txt').innerHTML='<b>Libere a bateria do Meu Corre</b> para o km ser contado com a tela apagada: em <b>Bateria</b>, escolha <b>Sem restrições</b>'+(xi?' e ative o <b>Início automático</b>.':'.');
+  else if(b.otimizado&&!S.cfg.batOk){$('co-bat-txt').innerHTML='<b>Libere a bateria do Sobra Real</b> para o km ser contado com a tela apagada: em <b>Bateria</b>, escolha <b>Sem restrições</b>'+(xi?' e ative o <b>Início automático</b>.':'.');
     $('co-bat-btn').textContent='Abrir configurações do app';batAcao=()=>UT.abrirOtimizacao();box.hidden=false}
   else{box.hidden=true;batAcao=null}
   $('co-bat-ok').hidden=!(b.otimizado&&!b.economia&&!S.cfg.batOk);
@@ -788,7 +788,7 @@ $('f-setup').addEventListener('submit',e=>{e.preventDefault();const c=S.cfg;
 /* ---------- atualização do app (Android) ---------- */
 const BUILD=parseInt('__BUILD__',10)||0;
 const LOJA='__LOJA__'==='1'; /* versão da Play Store: a loja cuida das atualizações */
-const VER='0.9.3';
+const VER='0.9.4';
 const UP_API='https://api.github.com/repos/ddtank09zinho-ux/meu-corre/releases/latest';
 const UP_APK='https://github.com/ddtank09zinho-ux/meu-corre/releases/latest/download/meu-corre.apk';
 let upNova=null;
@@ -797,12 +797,12 @@ async function checkUpdate(manual){
   if(!manual){try{const t=+localStorage.getItem('mc-upcheck')||0;if(Date.now()-t<6*3600e3&&!upNova)return;localStorage.setItem('mc-upcheck',String(Date.now()))}catch(_){}}
   try{const j=await (await fetch(UP_API,{cache:'no-store'})).json();const tag=String(j.tag_name||'');const m=/-(\d+)$/.exec(tag);const n=m?+m[1]:0;
     if(n>BUILD){upNova=tag.replace(/^v/,'').replace(/-\d+$/,'');$('up-txt').textContent='Nova versão '+upNova+' disponível';$('up-bar').hidden=false;
-      $('up-info').textContent='Meu Corre · versão '+VER+' (build '+BUILD+') · nova versão '+upNova+' disponível';if(manual)toast('Nova versão '+upNova+' disponível');}
+      $('up-info').textContent='Sobra Real · versão '+VER+' (build '+BUILD+') · nova versão '+upNova+' disponível';if(manual)toast('Nova versão '+upNova+' disponível');}
     else if(manual)toast('Você já está na versão mais nova');
   }catch(_){if(manual)toast('Sem internet para verificar agora')}}
 function baixarUpdate(){toast('Baixando… quando terminar, toque no arquivo e em Atualizar');
   try{if(UT){UT.abrirLink({url:UP_APK}).catch(()=>{location.href=UP_APK});return}}catch(_){}location.href=UP_APK}
-if(NATIVE&&BUILD)$('up-info').textContent='Meu Corre · versão '+VER+' (build '+BUILD+')';
+if(NATIVE&&BUILD)$('up-info').textContent='Sobra Real · versão '+VER+' (build '+BUILD+')';
 if(NATIVE&&BUILD&&!LOJA){$('up-row').hidden=false;
   $('up-btn').addEventListener('click',baixarUpdate);
   $('b-update').addEventListener('click',()=>{if(upNova)baixarUpdate();else checkUpdate(true)});
@@ -811,8 +811,8 @@ if(NATIVE&&BUILD&&!LOJA){$('up-row').hidden=false;
 
 /* ---------- backup ---------- */
 $('b-export').addEventListener('click',()=>{
-  const blob=new Blob([JSON.stringify({app:'meu-corre',versao:1,exportado:new Date().toISOString(),dados:S},null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`meu-corre-backup-${today}.json`;
+  const blob=new Blob([JSON.stringify({app:'sobra-real',versao:1,exportado:new Date().toISOString(),dados:S},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`sobra-real-backup-${today}.json`;
   document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast('Backup baixado')});
 $('b-import').addEventListener('click',()=>$('f-import').click());
 $('f-import').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;
@@ -820,7 +820,7 @@ $('f-import').addEventListener('change',e=>{const f=e.target.files[0];if(!f)retu
     if(!d.cfg||!Array.isArray(d.dias))throw 0;
     S={cfg:Object.assign(JSON.parse(JSON.stringify(DEF)),d.cfg),dias:d.dias,manut:d.manut||[]};
     if(!S.cfg.veiculo)S.cfg.veiculo='moto';save();applyLabels();fillCfg();fillForm(today);renderAll();toast(`Backup restaurado: ${S.dias.length} dias`)}
-  catch(err){toast('Este arquivo não é um backup do Meu Corre')}};r.readAsText(f);e.target.value=''});
+  catch(err){toast('Este arquivo não é um backup do Sobra Real')}};r.readAsText(f);e.target.value=''});
 $('b-reset').addEventListener('click',e=>{const b=e.currentTarget;
   if(b.dataset.confirm){try{localStorage.removeItem(KEY)}catch(_){ }
     const p=PREF();Promise.resolve(p&&p.remove({key:KEY})).catch(()=>{}).then(()=>location.reload())}
