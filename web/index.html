@@ -208,8 +208,9 @@ img{max-width:100%}
 
     <form class="card" id="f-dia" autocomplete="off">
       <div class="row"><h2>Registrar o dia</h2><input type="date" id="d-data" style="width:auto"></div>
-      <h3>Ganhos por plataforma</h3>
+      <div class="row"><h3>Ganhos por plataforma</h3><span class="val" id="d-total"></span></div>
       <div class="grid2" id="d-plats"></div>
+      <p class="note" id="d-ant" hidden></p>
       <h3>Como foi o dia</h3>
       <div class="grid3">
         <label class="f">Km rodados<input id="d-km" inputmode="decimal" placeholder="0"></label>
@@ -226,6 +227,15 @@ img{max-width:100%}
   <section class="tab" id="tab-semana" hidden>
     <div class="sample" id="s-sample" hidden><span>Você está vendo dias de exemplo.</span><button class="btn-sm" id="b-limpar">Apagar exemplos</button></div>
     <div class="card">
+      <h2>Metas</h2>
+      <div class="row"><h3>Esta semana</h3><span class="val" id="mt-sem-v"></span></div>
+      <div class="progress"><i id="mt-sem-bar" style="width:0%"></i></div>
+      <p class="note" id="mt-sem-t"></p>
+      <div class="row" style="margin-top:6px"><h3>Este mês</h3><span class="val" id="mt-mes-v"></span></div>
+      <div class="progress"><i id="mt-mes-bar" style="width:0%"></i></div>
+      <p class="note" id="mt-mes-t"></p>
+    </div>
+    <div class="card">
       <div class="row"><h2>Últimos 7 dias</h2><span class="note" id="s-periodo"></span></div>
       <div class="grid2">
         <div class="stat"><span>Lucro real</span><b id="s-lucro">–</b></div>
@@ -235,6 +245,16 @@ img{max-width:100%}
       </div>
       <svg class="chart" id="s-chart" viewBox="0 0 340 180" role="img" aria-label="Gráfico de ganhos por dia"></svg>
       <div class="legend"><span><i style="background:var(--bar-ghost)"></i>O app mostrou</span><span><i style="background:var(--accent)"></i>Lucro real</span></div>
+    </div>
+    <div class="card">
+      <h2>Relatório do mês</h2>
+      <p class="note">Um PDF com ganhos, km, custos e lucro do mês, para guardar ou mostrar a banco, imobiliária ou contador.</p>
+      <div class="grid2">
+        <label class="f">Mês<select id="r-mes"></select></label>
+        <label class="f">Seu nome no relatório<input id="r-nome" placeholder="Opcional"></label>
+      </div>
+      <button type="button" class="btn-main" id="r-gerar">Gerar relatório em PDF</button>
+      <p class="note" id="r-dica"></p>
     </div>
     <div class="card">
       <h3>Dias registrados</h3>
@@ -255,6 +275,22 @@ img{max-width:100%}
       <p class="note">Dinheiro que o desgaste já consumiu e que você deveria ter guardado para as próximas manutenções.</p>
       <div class="maint" id="mo-itens"></div>
     </div>
+
+    <form class="card fuel" id="f-abast">
+      <div class="row"><h2>Abastecimentos</h2><span class="val" id="ab-mes"></span></div>
+      <p class="note" id="ab-resumo"></p>
+      <button type="button" id="ab-usar" hidden></button>
+      <div class="grid2">
+        <label class="f">Litros<input id="ab-litros" inputmode="decimal" placeholder="0,0"></label>
+        <label class="f">Valor pago<div class="prefix"><input id="ab-valor" inputmode="decimal" placeholder="0,00"></div></label>
+        <label class="f">Km no painel (opcional)<input id="ab-odo" inputmode="numeric" placeholder="Ex.: 23450"></label>
+        <label class="f">Data<input type="date" id="ab-data"></label>
+      </div>
+      <label class="check"><input type="checkbox" id="ab-cheio" checked>Completei o tanque</label>
+      <button type="submit">Registrar abastecimento</button>
+      <p class="note">Com o km do painel e o tanque completo em dois abastecimentos seguidos, o app calcula o consumo real do seu veículo.</p>
+      <div class="daylist" id="ab-lista"></div>
+    </form>
 
     <form class="card" id="f-manut">
       <h3>Fiz uma manutenção</h3>
@@ -278,6 +314,8 @@ img{max-width:100%}
         <label class="f">Meta de lucro por dia<div class="prefix"><input id="c-meta" inputmode="decimal"></div></label>
         <label class="f">Dias trabalhados por mês<input id="c-dias" inputmode="numeric"></label>
         <label class="f">Mínimo por km (vazio = automático)<div class="prefix"><input id="c-minkm" inputmode="decimal" placeholder="auto"></div></label>
+        <label class="f">Meta da semana (vazio = automático)<div class="prefix"><input id="c-metasem" inputmode="decimal" placeholder="auto"></div></label>
+        <label class="f">Meta do mês (vazio = automático)<div class="prefix"><input id="c-metames" inputmode="decimal" placeholder="auto"></div></label>
       </div>
       <details>
         <summary>Custos mensais fixos</summary>
@@ -305,7 +343,7 @@ img{max-width:100%}
       <input type="file" id="f-import" accept=".json,application/json" hidden>
       <button type="button" class="danger" id="b-reset">Apagar todos os dados</button>
       <div class="btnrow" id="up-row" hidden><button type="button" id="b-update">Verificar atualização</button></div>
-      <p class="note" id="up-info">Sobra Real · versão 0.9.4</p>
+      <p class="note" id="up-info">Sobra Real · versão 0.9.5</p>
     </div>
   </section>
 
@@ -467,7 +505,8 @@ function sampleDays(v){
 let S;
 try{S=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){S=null}
 const novo=!S||!S.cfg;
-if(novo){S={cfg:JSON.parse(JSON.stringify(DEF)),dias:[],manut:[]}}
+if(novo){S={cfg:JSON.parse(JSON.stringify(DEF)),dias:[],manut:[],abast:[]}}
+if(!Array.isArray(S.abast))S.abast=[];
 if(!S.cfg.veiculo)S.cfg.veiculo='moto';
 /* Cópia de segurança no armazenamento do Android (não some se o sistema limpar o navegador interno;
    entra no backup automático do Google) */
@@ -513,7 +552,10 @@ function formDia(){const data=$('d-data').value||today;const base=S.dias.find(x=
   PLS().forEach(p=>d[p]=numIn($('d-p-'+p).value));
   Object.keys(F).forEach(k=>d[k]=numIn($(F[k]).value));return d}
 function fillForm(data){const d=S.dias.find(x=>x.data===data);$('d-data').value=data;
-  PLS().forEach(p=>$('d-p-'+p).value=d?inStr(d[p]):'');
+  /* sugere os valores do último dia registrado antes deste (aparecem apagados no campo) */
+  const ant=[...S.dias].filter(x=>x.data<data&&!x.exemplo).sort((a,b)=>b.data.localeCompare(a.data))[0];
+  PLS().forEach(p=>{const i=$('d-p-'+p);i.value=d?inStr(d[p]):'';i.placeholder=ant&&ant[p]?inStr(ant[p]):'0,00'});
+  $('d-ant').hidden=!ant||!!d;if(ant)$('d-ant').textContent='Os valores apagados nos campos são do seu último dia ('+dataBR(ant.data)+'), só para comparar.';
   Object.keys(F).forEach(k=>$(F[k]).value=d?inStr(d[k]):'');}
 function applyLabels(){const v=V(),c=S.cfg;
   buildPlats();
@@ -528,6 +570,7 @@ function applyLabels(){const v=V(),c=S.cfg;
 function renderHoje(){
   const d=formDia(), r=calcDia(d), c=S.cfg;
   const isToday=d.data===today;
+  $('d-total').textContent=r.bruto>0?'Total '+brl(r.bruto):'';
   document.querySelector('#tab-hoje .hero .eyebrow').textContent=isToday?'No seu bolso hoje':'No seu bolso em '+dataBR(d.data);
   $('h-lucro').textContent=brl(r.lucro,0); $('h-lucro').classList.toggle('neg',r.lucro<0);
   $('h-sub').textContent=r.bruto>0?`O app mostrou ${brl(r.bruto)}. ${V().rot==='Bike'?'Bike':V().rot}, custos fixos e gastos do dia levaram ${brl(r.custo)}.`:'Preencha os ganhos e os km abaixo para ver o seu lucro de verdade.';
@@ -555,8 +598,69 @@ function renderHoje(){
   +`<div class="row total"><span class="lbl">Lucro real</span><span class="val">${brl(r.lucro)}</span></div>`;
 }
 
+/* ---------- METAS DA SEMANA E DO MÊS ---------- */
+function metaSem(){const c=S.cfg;return c.metaSem>0?c.metaSem:Math.round(c.meta*Math.max(1,Math.round(c.dias/4.345)))}
+function metaMes(){const c=S.cfg;return c.metaMes>0?c.metaMes:Math.round(c.meta*c.dias)}
+function renderMetas(){
+  const d0=new Date(today+'T12:00:00'),dow=(d0.getDay()+6)%7; // segunda = 0
+  const iniSem=addDays(today,-dow),iniMes=today.slice(0,8)+'01';
+  const soma=ini=>S.dias.filter(x=>x.data>=ini&&x.data<=today).reduce((a,x)=>a+calcDia(x).lucro,0);
+  const fimMes=(()=>{const x=new Date(d0.getFullYear(),d0.getMonth()+1,0);return x.getDate()})();
+  [['sem',soma(iniSem),metaSem(),6-dow,'da semana'],['mes',soma(iniMes),metaMes(),fimMes-d0.getDate(),'do mês']].forEach(([k,feito,meta,restam,nome])=>{
+    const pct=meta>0?Math.max(0,Math.min(100,feito/meta*100)):0;
+    $('mt-'+k+'-v').textContent=brl(feito,0)+' de '+brl(meta,0);$('mt-'+k+'-bar').style.width=pct+'%';
+    const falta=meta-feito;
+    $('mt-'+k+'-t').textContent=falta<=0?'Meta '+nome+' batida.':'Faltam '+brl(falta,0)+(restam>0?' em '+restam+(restam>1?' dias':' dia')+' até o fim '+nome+'.':' hoje.');
+  });
+}
+/* ---------- RELATÓRIO DO MÊS ---------- */
+const MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const nomeMes=m=>MESES[+m.slice(5,7)-1]+' de '+m.slice(0,4);
+function renderRelSel(){const sel=$('r-mes'),atual=sel.value;
+  const meses=[...new Set(S.dias.filter(d=>!d.exemplo).map(d=>d.data.slice(0,7)).concat([today.slice(0,7)]))].sort().reverse();
+  sel.innerHTML=meses.map(m=>`<option value="${m}">${nomeMes(m)}</option>`).join('');
+  if(meses.includes(atual))sel.value=atual;
+  if(document.activeElement!==$('r-nome'))$('r-nome').value=S.cfg.nome||'';
+  const nat=(()=>{try{return !!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())}catch(_){return false}})();
+  $('r-dica').textContent=nat?'Na tela que abrir, escolha "Salvar como PDF" e depois compartilhe pelo WhatsApp ou e-mail.':'Na janela de impressão, escolha "Salvar como PDF".'}
+const esc=t=>String(t).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+function htmlRelatorio(mes){
+  const c=S.cfg,v=V(),ds=S.dias.filter(d=>d.data.slice(0,7)===mes&&!d.exemplo).sort((a,b)=>a.data.localeCompare(b.data));
+  const T={bruto:0,comb:0,manut:0,dep:0,fixo:0,extra:0,lucro:0,km:0,horas:0,ent:0},porApp={};
+  const linhas=ds.map(d=>{const r=calcDia(d);['bruto','comb','manut','dep','fixo','extra','lucro'].forEach(k=>T[k]+=r[k]);T.km+=d.km;T.horas+=d.horas;T.ent+=d.entregas;
+    PLAT.forEach(p=>{if(d[p])porApp[p]=(porApp[p]||0)+d[p]});
+    return `<tr><td>${new Date(d.data+'T12:00:00').toLocaleDateString('pt-BR')}</td><td>${brl(r.bruto)}</td><td>${fmt(d.km,1)}</td><td>${fmt(d.horas,1)}</td><td>${brl(r.custo)}</td><td><b>${brl(r.lucro)}</b></td></tr>`}).join('');
+  const nd=ds.length,gerado=new Date().toLocaleDateString('pt-BR');
+  const apps=Object.keys(porApp).sort((a,b)=>porApp[b]-porApp[a]).map(p=>`<tr><td>${esc(PLATS[p])}</td><td>${brl(porApp[p])}</td></tr>`).join('');
+  const custo=[...(v.fuel?[['Combustível',T.comb]]:[]),['Desgaste e manutenção',T.manut],['Desvalorização do veículo',T.dep],['Custos fixos'+(c.mei?' (inclui DAS do MEI)':''),T.fixo],['Alimentação e outros gastos',T.extra]]
+    .map(([l,x])=>`<tr><td>${l}</td><td>− ${brl(x)}</td></tr>`).join('');
+  return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Relatório ${nomeMes(mes)}</title><style>
+  @page{size:A4;margin:16mm}body{font-family:Arial,Helvetica,sans-serif;color:#16191D;font-size:11pt;margin:0}
+  h1{font-size:20pt;margin:0}h2{font-size:13pt;margin:18px 0 6px;border-bottom:2px solid #F5B800;padding-bottom:3px}
+  .sub{color:#5B636D;margin:2px 0 14px}table{width:100%;border-collapse:collapse}td,th{padding:5px 6px;border-bottom:1px solid #DDD;text-align:right}
+  td:first-child,th:first-child{text-align:left}th{background:#F3F3F1;font-size:9.5pt}.res td{font-size:12pt}.tot td{font-weight:bold;border-top:2px solid #16191D}
+  .grid{display:flex;gap:10px;margin-top:6px}.box{flex:1;border:1px solid #DDD;border-radius:6px;padding:8px}.box b{display:block;font-size:15pt}.box span{color:#5B636D;font-size:9pt}
+  .rod{margin-top:20px;color:#5B636D;font-size:8.5pt}</style></head><body>
+  <h1>Relatório de ganhos · ${nomeMes(mes)}</h1>
+  <p class="sub">${c.nome?esc(c.nome)+' · ':''}${esc(v.rot)} · ${UN().Un.toLowerCase()} por aplicativo · ${nd} ${nd===1?'dia trabalhado':'dias trabalhados'}</p>
+  <div class="grid"><div class="box"><span>Recebido dos apps</span><b>${brl(T.bruto)}</b></div><div class="box"><span>Custos do trabalho</span><b>${brl(T.bruto-T.lucro)}</b></div><div class="box"><span>Lucro real</span><b>${brl(T.lucro)}</b></div></div>
+  <div class="grid"><div class="box"><span>Km rodados</span><b>${fmt(T.km)} km</b></div><div class="box"><span>Horas trabalhadas</span><b>${fmt(T.horas,1)} h</b></div><div class="box"><span>Lucro por hora</span><b>${T.horas?brl(T.lucro/T.horas):'–'}</b></div><div class="box"><span>${UN().Un}</span><b>${fmt(T.ent)}</b></div></div>
+  <h2>Recebido por aplicativo</h2><table>${apps||'<tr><td>Nenhum ganho registrado</td><td></td></tr>'}<tr class="tot"><td>Total recebido</td><td>${brl(T.bruto)}</td></tr></table>
+  <h2>Custos do trabalho</h2><table>${custo}<tr class="tot"><td>Lucro real do mês</td><td>${brl(T.lucro)}</td></tr></table>
+  <h2>Dia a dia</h2><table><tr><th>Data</th><th>Recebido</th><th>Km</th><th>Horas</th><th>Custos</th><th>Lucro</th></tr>${linhas||'<tr><td colspan="6">Nenhum dia registrado neste mês.</td></tr>'}
+  <tr class="tot"><td>Total</td><td>${brl(T.bruto)}</td><td>${fmt(T.km,1)}</td><td>${fmt(T.horas,1)}</td><td>${brl(T.bruto-T.lucro)}</td><td>${brl(T.lucro)}</td></tr></table>
+  <p class="rod">Gerado pelo app Sobra Real em ${gerado}. Os valores foram registrados pelo próprio usuário; os custos são estimados pelos km rodados e pelos dados do veículo informados no app.</p>
+  </body></html>`}
+$('r-nome').addEventListener('change',()=>{S.cfg.nome=$('r-nome').value.trim();save()});
+$('r-gerar').addEventListener('click',async()=>{const mes=$('r-mes').value||today.slice(0,7);S.cfg.nome=$('r-nome').value.trim();save();
+  const html=htmlRelatorio(mes),nome='Sobra Real - relatorio '+mes;
+  if(UT){try{await UT.imprimir({html,nome});return}catch(_){}}
+  const w=window.open('','_blank');if(!w){toast('Não consegui abrir o relatório');return}
+  w.document.write(html);w.document.close();setTimeout(()=>w.print(),400)});
+
 /* ---------- SEMANA ---------- */
 function renderSemana(){
+  renderMetas();renderRelSel();
   const ini=addDays(today,-6);
   const dias=[];for(let i=0;i<7;i++){const s=addDays(ini,i);dias.push({s,d:S.dias.find(x=>x.data===s)})}
   let L=0,B=0,H=0,K=0;
@@ -589,6 +693,39 @@ $('s-lista').addEventListener('click',e=>{
 });
 $('b-limpar').addEventListener('click',()=>{S.dias=S.dias.filter(d=>!d.exemplo);S.manut=S.manut.filter(m=>!m.exemplo);save();fillForm(today);renderAll();toast('Exemplos apagados')});
 
+/* ---------- ABASTECIMENTOS ---------- */
+function consumoReal(){
+  // dois abastecimentos de tanque cheio com km do painel: km entre eles ÷ litros colocados depois do primeiro
+  const l=[...S.abast].sort((a,b)=>a.data.localeCompare(b.data)||(a.odo||0)-(b.odo||0));
+  for(let j=l.length-1;j>0;j--){if(!(l[j].cheio&&l[j].odo>0))continue;
+    for(let i=j-1;i>=0;i--){if(l[i].cheio&&l[i].odo>0&&l[i].odo<l[j].odo){
+      const litros=l.slice(i+1,j+1).reduce((a,x)=>a+x.litros,0),km=l[j].odo-l[i].odo;
+      if(litros>0&&km>0&&km/litros>2&&km/litros<80)return {kml:Math.round(km/litros*10)/10,de:l[i].data,ate:l[j].data,km};
+      break}}}
+  return null}
+function renderAbast(){
+  if(!V().fuel)return;const c=S.cfg;const mes=today.slice(0,7);
+  const doMes=S.abast.filter(x=>x.data.slice(0,7)===mes);
+  $('ab-mes').textContent=doMes.length?brl(doMes.reduce((a,x)=>a+x.valor,0),0)+' no mês':'';
+  const cr=consumoReal();
+  if(cr){$('ab-resumo').innerHTML=`Consumo real: <b>${fmt(cr.kml,1)} km/l</b> (${fmt(cr.km)} km entre ${dataBR(cr.de).slice(5).trim()} e ${dataBR(cr.ate).slice(5).trim()}). No cálculo está ${fmt(c.consumo,1)} km/l.`;
+    const dif=Math.abs(cr.kml-c.consumo)>=0.3;$('ab-usar').hidden=!dif;$('ab-usar').textContent='Usar '+fmt(cr.kml,1)+' km/l no cálculo'}
+  else{$('ab-resumo').textContent=S.abast.length?'O preço do combustível do cálculo é atualizado a cada abastecimento.':'Registre seus abastecimentos: o app atualiza o preço do combustível sozinho.';$('ab-usar').hidden=true}
+  const l=[...S.abast].sort((a,b)=>b.data.localeCompare(a.data)).slice(0,6);
+  $('ab-lista').innerHTML=l.map(x=>`<div class="row"><div class="d"><b>${dataBR(x.data)}</b><small>${fmt(x.litros,1)} L · ${brl(x.valor/x.litros)}/L${x.odo?' · '+fmt(x.odo)+' km':''}${x.cheio?' · tanque cheio':''}</small></div><div style="display:flex;gap:8px;align-items:center"><b>${brl(x.valor)}</b><button type="button" class="btn-sm danger" data-abdel="${x.id}">Apagar</button></div></div>`).join('');
+}
+$('f-abast').addEventListener('submit',e=>{e.preventDefault();
+  const litros=numIn($('ab-litros').value),valor=numIn($('ab-valor').value);
+  if(!(litros>0&&valor>0)){toast('Preencha os litros e o valor pago');return}
+  const x={id:Date.now(),data:$('ab-data').value||today,litros,valor,odo:Math.round(numIn($('ab-odo').value))||0,cheio:$('ab-cheio').checked};
+  S.abast.push(x);S.cfg.gas=Math.round(valor/litros*100)/100;save();
+  ['ab-litros','ab-valor','ab-odo'].forEach(i=>$(i).value='');fillCfg();renderAll();
+  toast('Abastecimento registrado. Combustível agora em '+brl(S.cfg.gas)+'/L')});
+$('ab-usar').addEventListener('click',()=>{const cr=consumoReal();if(!cr)return;S.cfg.consumo=cr.kml;save();fillCfg();renderAll();toast('Consumo atualizado para '+fmt(cr.kml,1)+' km/l')});
+$('ab-lista').addEventListener('click',e=>{const id=e.target.dataset.abdel;if(!id)return;
+  if(e.target.dataset.confirm){S.abast=S.abast.filter(x=>String(x.id)!==id);save();renderAll();toast('Abastecimento apagado')}
+  else{e.target.dataset.confirm='1';e.target.textContent='Confirmar';setTimeout(()=>{if(e.target.isConnected){delete e.target.dataset.confirm;e.target.textContent='Apagar'}},3000)}});
+
 /* ---------- MOTO ---------- */
 function kmDesde(data){return S.dias.filter(d=>d.data>data).reduce((a,d)=>a+d.km,0)}
 function renderMoto(){
@@ -616,6 +753,7 @@ function fillCfg(){const c=S.cfg;
   $('c-parcela').value=inStr(c.parcela);$('c-docs').value=inStr(c.docs);$('c-cel').value=inStr(c.cel);$('c-deprec').value=inStr(c.deprec);
   $('c-itens').innerHTML=c.itens.map(i=>`<div class="grid3" style="align-items:end"><span style="font-weight:600;align-self:center">${i.nome}</span><label class="f">A cada (km)<input id="ci-km-${i.id}" inputmode="numeric" value="${i.km}"></label><label class="f">Custo<div class="prefix"><input id="ci-v-${i.id}" inputmode="decimal" value="${inStr(i.valor)}"></div></label></div>`).join('');
   $('c-fatant').value=inStr(c.fatAnt);$('c-minkm').value=inStr(c.minKm||0);
+  $('c-metasem').value=inStr(c.metaSem||0);$('c-metames').value=inStr(c.metaMes||0);
 }
 $('c-apps').addEventListener('click',chipsToggle);
 $('c-vei').addEventListener('change',()=>{$('c-vei-nota').hidden=$('c-vei').value===S.cfg.veiculo});
@@ -625,7 +763,7 @@ $('f-cfg').addEventListener('submit',e=>{e.preventDefault();const c=S.cfg;
   c.trabalho=$('c-trab').value;c.plats=ap.concat(['outros','gorjeta']);
   if(nv!==c.veiculo){applyVehicle(nv);save();applyLabels();fillCfg();fillForm($('d-data').value||today);renderAll();toast(`Pronto: agora com ${VEI[nv].rot.toLowerCase()}. Confira os custos.`);return}
   c.consumo=numIn($('c-consumo').value)||DEF.consumo;c.gas=numIn($('c-gas').value);c.meta=numIn($('c-meta').value);c.dias=Math.max(1,Math.round(numIn($('c-dias').value))||24);
-  c.parcela=numIn($('c-parcela').value);c.docs=numIn($('c-docs').value);c.cel=numIn($('c-cel').value);c.deprec=numIn($('c-deprec').value);c.minKm=numIn($('c-minkm').value);
+  c.parcela=numIn($('c-parcela').value);c.docs=numIn($('c-docs').value);c.cel=numIn($('c-cel').value);c.deprec=numIn($('c-deprec').value);c.minKm=numIn($('c-minkm').value);c.metaSem=numIn($('c-metasem').value);c.metaMes=numIn($('c-metames').value);
   c.itens.forEach(i=>{i.km=Math.max(1,numIn($('ci-km-'+i.id).value));i.valor=numIn($('ci-v-'+i.id).value)});
   save();applyLabels();fillForm($('d-data').value||today);renderAll();toast('Configurações salvas')});
 $('f-manut').addEventListener('submit',e=>{e.preventDefault();
@@ -661,7 +799,7 @@ function renderMei(){
 $('c-fatant').addEventListener('change',()=>{S.cfg.fatAnt=numIn($('c-fatant').value);save();renderMei()});
 
 /* ---------- geral ---------- */
-function renderAll(){$('tab-vei').setAttribute('aria-selected',!$('tab-moto').hidden);renderHoje();renderSemana();renderMoto();renderMei()}
+function renderAll(){$('tab-vei').setAttribute('aria-selected',!$('tab-moto').hidden);renderHoje();renderSemana();renderMoto();renderAbast();renderMei()}
 function go(t){document.querySelectorAll('section.tab').forEach(s=>s.hidden=s.id!=='tab-'+t);
   document.querySelectorAll('nav.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));window.scrollTo(0,0)}
 document.querySelectorAll('nav.tabs button').forEach(b=>b.addEventListener('click',()=>go(b.dataset.tab)));
@@ -674,7 +812,7 @@ $('f-dia').addEventListener('submit',e=>{e.preventDefault();const d=formDia();
   delete d.exemplo;S.dias=S.dias.filter(x=>x.data!==d.data);S.dias.push(d);save();renderAll();toast('Dia salvo')});
 
 $('hoje-str').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
-$('mn-data').value=today;
+$('mn-data').value=today;$('ab-data').value=today;
 applyLabels();fillForm(today);fillCfg();renderAll();
 
 /* ---------- corre (km automático) ---------- */
@@ -709,6 +847,14 @@ async function startWatcher(){
 }
 function stopWatcher(){if(BG&&watcherId!=null){BG.removeWatcher({id:watcherId}).catch(()=>{});watcherId=null}}
 function fmtTempo(ms){const m=Math.floor(ms/60000);return `${Math.floor(m/60)}h${String(m%60).padStart(2,'0')}`}
+/* Aviso de corre esquecido: notificação 14 h depois do início e alerta no card */
+const HORAS_AVISO=14,AVISO_ID=7001;
+function LN(){try{return NATIVE?window.Capacitor.registerPlugin('LocalNotifications'):null}catch(_){return null}}
+function agendarAviso(inicio){const n=LN();if(!n)return;
+  n.schedule({notifications:[{id:AVISO_ID,title:'Seu corre ainda está ligado',
+    body:'Já são '+HORAS_AVISO+' horas contando. Se você esqueceu de encerrar, abra o Sobra Real e toque em Encerrar corre.',
+    schedule:{at:new Date(inicio+HORAS_AVISO*3600e3),allowWhileIdle:true}}]}).catch(()=>{})}
+function cancelarAviso(){const n=LN();if(n)n.cancel({notifications:[{id:AVISO_ID}]}).catch(()=>{})}
 function renderCorre(){
   const c=S.corre,on=!!(c&&c.ativo),gps=on?c.modo==='gps':NATIVE;
   $('corre-card').classList.toggle('on',on);$('co-on').hidden=!on;$('co-off').hidden=on;$('co-status').hidden=!on;
@@ -717,7 +863,9 @@ function renderCorre(){
   if(on){$('co-tempo').textContent=fmtTempo(Date.now()-c.inicio);
     $('co-km-l').textContent=gps?'Km pelo GPS':'Km';$('co-km').textContent=gps?fmt(c.m/1000,1)+' km':'no fim';
     $('co-odo-fim-l').hidden=gps;
-    $('co-hint').textContent=gps?'Pode apagar a tela e usar os outros apps. Uma notificação mostra que o Sobra Real está contando.':(c.odoIni?`Começou com ${fmt(c.odoIni)} km no painel.`:'Sem km inicial: no fim, digite os km do dia no registro.');}
+    $('co-hint').textContent=gps?'Pode apagar a tela e usar os outros apps. Uma notificação mostra que o Sobra Real está contando.':(c.odoIni?`Começou com ${fmt(c.odoIni)} km no painel.`:'Sem km inicial: no fim, digite os km do dia no registro.');
+    const hh=(Date.now()-c.inicio)/3600e3;
+    if(hh>=HORAS_AVISO)$('co-hint').innerHTML=`<b style="color:var(--bad)">Este corre está ligado há ${Math.floor(hh)} horas.</b> Se você esqueceu de encerrar, toque em Encerrar corre e depois corrija as horas no registro do dia.`;}
   clearInterval(coTick);if(on)coTick=setInterval(()=>{$('co-tempo').textContent=fmtTempo(Date.now()-S.corre.inicio)},15000);
 }
 /* ---------- ponte com o Android ---------- */
@@ -745,11 +893,12 @@ $('co-start').addEventListener('click',async()=>{
   S.corre={ativo:true,inicio:Date.now(),m:0,last:null,modo:NATIVE?'gps':'odo',odoIni:NATIVE?0:numIn($('co-odo-ini').value)};
   save();renderCorre();
   if(NATIVE&&!(await startWatcher())){S.corre=null;save();renderCorre();return}
+  agendarAviso(S.corre.inicio);
   toast(bat&&bat.economia?'Corre iniciado, mas desligue a economia de bateria: com ela o km não é contado':'Corre iniciado. Bom trabalho!')});
 $('co-stop').addEventListener('click',e=>{const b=e.currentTarget,c=S.corre;if(!c)return;
   if(!b.dataset.confirm){b.dataset.confirm='1';b.textContent='Toque de novo para encerrar';setTimeout(()=>{delete b.dataset.confirm;b.textContent='Encerrar corre'},4000);return}
   delete b.dataset.confirm;b.textContent='Encerrar corre';
-  stopWatcher();
+  stopWatcher();cancelarAviso();
   const horas=Math.round((Date.now()-c.inicio)/360000)/10;
   let km=0;
   if(c.modo==='gps')km=c.m/1000;
@@ -788,7 +937,7 @@ $('f-setup').addEventListener('submit',e=>{e.preventDefault();const c=S.cfg;
 /* ---------- atualização do app (Android) ---------- */
 const BUILD=parseInt('__BUILD__',10)||0;
 const LOJA='__LOJA__'==='1'; /* versão da Play Store: a loja cuida das atualizações */
-const VER='0.9.4';
+const VER='0.9.5';
 const UP_API='https://api.github.com/repos/ddtank09zinho-ux/meu-corre/releases/latest';
 const UP_APK='https://github.com/ddtank09zinho-ux/meu-corre/releases/latest/download/meu-corre.apk';
 let upNova=null;
@@ -810,15 +959,17 @@ if(NATIVE&&BUILD&&!LOJA){$('up-row').hidden=false;
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate(false)});}
 
 /* ---------- backup ---------- */
-$('b-export').addEventListener('click',()=>{
-  const blob=new Blob([JSON.stringify({app:'sobra-real',versao:1,exportado:new Date().toISOString(),dados:S},null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`sobra-real-backup-${today}.json`;
+$('b-export').addEventListener('click',async()=>{
+  const txt=JSON.stringify({app:'sobra-real',versao:1,exportado:new Date().toISOString(),dados:S},null,2),nome=`sobra-real-backup-${today}.json`;
+  if(UT){try{await UT.salvarDownload({nome,conteudo:txt,mime:'application/json'});toast('Backup salvo na pasta Downloads: '+nome);return}catch(_){}}
+  const blob=new Blob([txt],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nome;
   document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast('Backup baixado')});
 $('b-import').addEventListener('click',()=>$('f-import').click());
 $('f-import').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;
   const r=new FileReader();r.onload=()=>{try{const j=JSON.parse(r.result);const d=j.dados||j;
     if(!d.cfg||!Array.isArray(d.dias))throw 0;
-    S={cfg:Object.assign(JSON.parse(JSON.stringify(DEF)),d.cfg),dias:d.dias,manut:d.manut||[]};
+    S={cfg:Object.assign(JSON.parse(JSON.stringify(DEF)),d.cfg),dias:d.dias,manut:d.manut||[],abast:d.abast||[]};
     if(!S.cfg.veiculo)S.cfg.veiculo='moto';save();applyLabels();fillCfg();fillForm(today);renderAll();toast(`Backup restaurado: ${S.dias.length} dias`)}
   catch(err){toast('Este arquivo não é um backup do Sobra Real')}};r.readAsText(f);e.target.value=''});
 $('b-reset').addEventListener('click',e=>{const b=e.currentTarget;
